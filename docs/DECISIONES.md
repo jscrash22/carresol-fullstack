@@ -425,7 +425,7 @@ Cada fase agrega sus decisiones al final de este archivo.
   normal, sin `--force`). Render reconstruyó la API y GitHub Pages publicó el frontend; el
   HTML público ya contiene el aviso de demostración. `verificacion-final.js` cerró los 2
   PENDIENTES de B10 y quedó en **14 PASS / 0 FAIL / 0 PENDIENTES**.
-- **Entregable**: `Reto2_Carresol.zip` regenerado con `tar` (rutas con `/`): **206 entradas,
+- **Entregable**: `Reto2_Carresol.zip` regenerado con `tar` (rutas con `/`): **207 entradas,
   3,5 MB**. Excluye `.git`, `node_modules`, `server/.env`, `server/backups/`, SQLite,
   certificados, logs y el zip anterior. El listado se revisó y el contenido extraído se
   escaneó contra los valores reales del `.env`: **0 fugas**
