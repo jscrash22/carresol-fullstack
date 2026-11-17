@@ -1,0 +1,41 @@
+PASS ✓ 1. Catálogo carga tarjetas desde la API (invitado) — 8 tarjetas
+PASS ✓ 2. Tarjetas muestran "Ver detalle" en vez de compra directa
+PASS ✓ 3. Modal de detalle abre al pulsar "Ver detalle"
+PASS ✓ 4. Selector de MATERIAL en el detalle
+PASS ✓ 5. Selector de MEDIDA/TALLA en el detalle
+PASS ✓ 6. Info de variante (precio, stock, SKU) en región aria-live
+PASS ✓ 7. "Agregar al carrito" suma la VARIANTE elegida al carrito — contador: 1
+PASS ✓ 8. Modal de detalle se cierra tras agregar
+PASS ✓ 9. Item del carrito muestra material/medida/talla — Oro 18k · Única
+PASS ✓ 10. Botón (+) respeta el tope de stock de la variante — deshabilitado: false
+PASS ✓ 11. Favorito se marca/desmarca en modo local (invitado) — ♡ → ♥
+PASS ✓ 12. Contador de favoritos se actualiza
+PASS ✓ 13. Login del cliente redirige al catálogo
+PASS ✓ 14. Header saluda y muestra "Mi cuenta"
+PASS ✓ 15. Carrito sincronizado con la cuenta tras el login (PUT /api/carrito) — contador: 1
+PASS ✓ 16. "Finalizar compra" lleva a #/checkout (con sesión iniciada)
+PASS ✓ 17. Checkout con radios accesibles de dirección, pago y facturación — 11 opciones
+PASS ✓ 18. Resumen con subtotal, IVA, envío y total estimado
+PASS ✓ 19. Pedido confirmado: éxito con número, factura y totales del servidor — n.º 16
+PASS ✓ 20. Mi cuenta (Direcciones): CRUD listado con acciones editar/eliminar — 4 direcciones
+PASS ✓ 21. Mi cuenta (Mis pedidos): listado con badge de estado y detalle expandible — 16 pedidos
+PASS ✓ 22. Token inválido → 401 → evento sesión-expirada redirige al login
+PASS ✓ 23. Admin: pestañas ARIA completas — 11 pestañas
+PASS ✓ 24. Resumen: conteos de las tablas del ER + ventas + pedidos por estado — 22 tarjetas
+PASS ✓ 25. Productos: tabla completa (incluye inactivos vía ?inactivos=true) — 27 productos
+PASS ✓ 26. Modal de producto con editor de VARIANTES (material, medida, precio, stock) — 1 variante(s) inicial(es)
+PASS ✓ 27. Catálogo: tablas de categorías y materiales — 2 tablas
+PASS ✓ 28. Pedidos: listado con acciones (estado, pago, envío) — 16 pedidos
+PASS ✓ 29. Pedidos: detalle expandible con items/pago/envío/factura/historial
+PASS ✓ 30. Usuarios: tabla con rol y conteo de pedidos
+PASS ✓ 31. Proveedores: tabla con acciones de editar/eliminar
+PASS ✓ 32. Compras: listado con estados y acciones según estado — 5 compras
+PASS ✓ 33. Inventario: stock bajo con sugerido + kardex de movimientos
+PASS ✓ 34. Mensajes: bandeja de contacto con filtro de lectura
+PASS ✓ 35. Parámetros: edición inline con botón Guardar
+PASS ✓ 36. Auditoría: tabla con filtros y detalle de cambios
+PASS ✓ 37. Sin errores de JavaScript en la página durante todo el flujo
+
+=========================================
+RESULTADO: 37 PASS / 0 FAIL
+=========================================

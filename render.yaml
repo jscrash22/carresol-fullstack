@@ -1,0 +1,38 @@
+# render.yaml — Blueprint de Render para la API de Carresol (Reto 2)
+#
+# Solo define el servicio web de la API. El frontend se publica en GitHub Pages
+# mediante .github/workflows/pages.yml (no consume recursos de Render).
+#
+# Los secretos NO viven aquí: se piden al aplicar el Blueprint (sync: false).
+# Tras el primer despliegue, pon la URL real del frontend en CORS_ORIGIN
+# (solo el origen, sin ruta ni barra final).
+
+services:
+  - type: web
+    name: carresol-api
+    runtime: node
+    rootDir: server
+    region: virginia
+    plan: free
+    healthCheckPath: /api/health
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HTTPS
+        value: "false"
+      - key: JWT_EXPIRES_IN
+        value: 2h
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      # Secretos: se introducen en el panel de Render al aplicar el Blueprint.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

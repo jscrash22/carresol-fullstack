@@ -1,0 +1,28 @@
+
+=== SMOKE TEST Carresol API — http://localhost:3000 ===
+
+PASS ✓ 1. Login admin → 200 + token — rol: admin
+PASS ✓ 2. Crear producto como admin → 201 — id creado: 26, stock: 1
+PASS ✓ 3a. Login usuario normal → 200 + rol user
+PASS ✓ 3b. User crea producto → 403 — status: 403, codigo: PROHIBIDO
+PASS ✓ 4. GET /api/productos público → ≥ 25 productos — total: 26
+PASS ✓ 4b. Filtro por categoría anillos → 5
+PASS ✓ 5. POST /api/pedidos sin token → 401 — status: 401
+PASS ✓ 5b. Token inválido → 401
+PASS ✓ 6a. Confirmar pedido como user → 201 — pedido #1, total: $1035
+PASS ✓ 6b. GET mis-pedidos contiene el pedido con detalle — detalle: producto 1 x2, precioUnit $450
+PASS ✓ 6c. Stock descontado en BD — stock 12 → 10
+PASS ✓ 7a. GET /api/pedidos como admin incluye el pedido del user — pedidos visibles: 1
+PASS ✓ 7b. GET /api/pedidos como user → 403
+PASS ✓ 8a. Pedido con stock insuficiente → error controlado (409 REGLA_NEGOCIO) — status: 409 — Stock insuficiente de "Producto Smoke Test": quedan 1 y pediste 2.
+PASS ✓ 8b. Registro con role:"admin" → queda como user (anti mass-assignment) — rol real: user
+PASS ✓ 8c. Email duplicado → 409
+PASS ✓ 8d. Validación fallida → 422 con detalles — 5 campos inválidos
+PASS ✓ 8e. /api/admin/usuarios sin passwordHash — usuarios: 3
+PASS ✓ 8f. User en /api/admin/usuarios → 403
+PASS ✓ 8g. /api/admin/resumen → conteos de las 4 tablas — {"productos":26,"usuarios":3,"pedidos":1,"detallesPedido":1}
+PASS ✓ Limpieza: DELETE producto de prueba → 200
+
+=========================================
+RESULTADO: 21 PASS / 0 FAIL
+=========================================

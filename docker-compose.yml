@@ -1,0 +1,34 @@
+# PostgreSQL 16 para Carresol (Reto 2) — opcional.
+# El proyecto también funciona con un PostgreSQL local o Supabase (ver README.md).
+#
+# Uso (los secretos viven SOLO en server/.env, nunca en este archivo):
+#   docker compose --env-file server/.env up -d
+#   docker compose --env-file server/.env ps    # esperar estado healthy
+#
+# Luego migra y siembra (ver README.md, sección "Puesta en marcha"):
+#   cd server
+#   npm install
+#   npx prisma migrate deploy
+#   npm run db:seed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: carresol-postgres
+    environment:
+      POSTGRES_USER: carresol
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD — defínela en server/.env}
+      POSTGRES_DB: carresol
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carresol -d carresol"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pg-datos:

@@ -1,0 +1,66 @@
+// ============================================================
+// Variante SQL Server 2022 (motor por defecto del Reto 2)
+// Para activarla:
+//   1. Copia este contenido a schema.prisma
+//   2. En .env: DATABASE_URL="sqlserver://localhost:1433;database=carresol;user=sa;password=TU_PASSWORD;trustServerCertificate=true;encrypt=true"
+//   3. Levanta el motor: docker compose --env-file server/.env up -d
+//   4. Crea la base y migra: npx prisma migrate dev
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Producto {
+  id          Int             @id @default(autoincrement())
+  nombre      String          @db.NVarChar(120)
+  descripcion String?         @db.NVarChar(500)
+  categoria   String          @db.NVarChar(40)
+  precio      Decimal         @db.Decimal(10, 2)
+  stock       Int             @default(0)
+  imagen      String?         @db.NVarChar(255)
+  alt         String?         @db.NVarChar(200)
+  createdAt   DateTime        @default(now())
+  detalles    PedidoDetalle[]
+
+  @@index([categoria])
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nombre       String   @db.NVarChar(80)
+  email        String   @unique @db.NVarChar(150)
+  passwordHash String   @db.NVarChar(100)
+  role         String   @default("user") @db.NVarChar(10) // "admin" | "user"
+  createdAt    DateTime @default(now())
+  pedidos      Pedido[]
+}
+
+model Pedido {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  total     Decimal         @db.Decimal(10, 2)
+  createdAt DateTime        @default(now())
+  usuario   Usuario         @relation(fields: [userId], references: [id])
+  detalles  PedidoDetalle[]
+
+  @@index([userId])
+}
+
+model PedidoDetalle {
+  id             Int      @id @default(autoincrement())
+  pedidoId       Int
+  productoId     Int
+  cantidad       Int
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto       Producto @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
+  @@index([productoId])
+}

@@ -1,0 +1,8 @@
+-- ============================================================
+-- Creación de la base "carresol" en SQL Server (solo variante SQL Server)
+-- Ejecutar dentro del contenedor una vez que esté healthy:
+--   docker exec -i carresol-sqlserver /opt/mssql-tools18/bin/sqlcmd \
+--     -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -No -Q "CREATE DATABASE carresol"
+-- En PowerShell (sustituye la contraseña por la de server/.env):
+--   docker exec carresol-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "TU_PASSWORD" -C -No -Q "CREATE DATABASE carresol"
+-- ============================================================

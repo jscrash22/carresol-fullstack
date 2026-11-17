@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Secretos y entorno (nunca versionar)
+server/.env
+server/certs/
+.env
+.env.local
+.env.*.local
+render-variables-SECRETO.md
+
+# Base de datos local (Plan B SQLite)
+server/prisma/*.db
+server/prisma/*.db-journal
+
+# Entregables
+*.zip
+
+# Logs y evidencias temporales
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db

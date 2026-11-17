@@ -1,0 +1,227 @@
+[
+  {
+    "id": 1,
+    "nombre": "Reloj Carresol Imperial",
+    "categoria": "relojes",
+    "precio": 450,
+    "descripcion": "Reloj elegante con correa de cuero y esfera dorada.",
+    "imagen": "assets/img/relojes/reloj-carresol-imperial.jpg",
+    "alt": "Reloj de lujo Carresol con esfera dorada"
+  },
+  {
+    "id": 2,
+    "nombre": "Reloj Carresol Clásico",
+    "categoria": "relojes",
+    "precio": 380,
+    "descripcion": "Diseño atemporal con detalles en acero y dorado.",
+    "imagen": "assets/img/relojes/reloj-carresol-clasico.jpg",
+    "alt": "Reloj clásico Carresol sobre fondo neutro"
+  },
+  {
+    "id": 3,
+    "nombre": "Reloj Carresol Sport",
+    "categoria": "relojes",
+    "precio": 320,
+    "descripcion": "Resistente al agua, ideal para uso diario.",
+    "imagen": "assets/img/relojes/reloj-carresol-sport.jpg",
+    "alt": "Reloj deportivo Carresol de pulsera metálica"
+  },
+  {
+    "id": 4,
+    "nombre": "Reloj Carresol Elegance",
+    "categoria": "relojes",
+    "precio": 520,
+    "descripcion": "Acabados premium para ocasiones especiales.",
+    "imagen": "assets/img/relojes/reloj-carresol-elegance.jpg",
+    "alt": "Reloj elegante Carresol con correa de cuero marrón"
+  },
+  {
+    "id": 5,
+    "nombre": "Reloj Carresol Minimal",
+    "categoria": "relojes",
+    "precio": 290,
+    "descripcion": "Esfera limpia y correa fina, estilo minimalista.",
+    "imagen": "assets/img/relojes/reloj-carresol-minimal.jpg",
+    "alt": "Reloj minimalista Carresol con esfera blanca"
+  },
+  {
+    "id": 6,
+    "nombre": "Collar Carresol Aurora",
+    "categoria": "collares",
+    "precio": 210,
+    "descripcion": "Cadena dorada con dije en forma de estrella.",
+    "imagen": "assets/img/collares/collar-carresol-aurora.jpg",
+    "alt": "Collar dorado Carresol Aurora con dije"
+  },
+  {
+    "id": 7,
+    "nombre": "Collar Carresol Perlas",
+    "categoria": "collares",
+    "precio": 340,
+    "descripcion": "Perlas cultivadas con broche dorado.",
+    "imagen": "assets/img/collares/collar-carresol-perlas.jpg",
+    "alt": "Collar de perlas Carresol con broche dorado"
+  },
+  {
+    "id": 8,
+    "nombre": "Collar Carresol Diamante",
+    "categoria": "collares",
+    "precio": 780,
+    "descripcion": "Dije de diamante en baño de oro de 18k.",
+    "imagen": "assets/img/collares/collar-carresol-diamante.jpg",
+    "alt": "Collar Carresol con dije de diamante"
+  },
+  {
+    "id": 9,
+    "nombre": "Collar Carresol Corazón",
+    "categoria": "collares",
+    "precio": 180,
+    "descripcion": "Dije de corazón grabable, regalo perfecto.",
+    "imagen": "assets/img/collares/collar-carresol-corazon.jpg",
+    "alt": "Collar Carresol con dije de corazón"
+  },
+  {
+    "id": 10,
+    "nombre": "Collar Carresol Lágrima",
+    "categoria": "collares",
+    "precio": 260,
+    "descripcion": "Cadena fina con piedra en forma de lágrima.",
+    "imagen": "assets/img/collares/collar-carresol-lagrima.jpg",
+    "alt": "Collar Carresol con piedra lágrima"
+  },
+  {
+    "id": 11,
+    "nombre": "Pulsera Carresol Trenza",
+    "categoria": "pulseras",
+    "precio": 120,
+    "descripcion": "Eslabones trenzados en baño de oro.",
+    "imagen": "assets/img/pulseras/pulsera-carresol-trenza.jpg",
+    "alt": "Pulsera Carresol de eslabones trenzados"
+  },
+  {
+    "id": 12,
+    "nombre": "Pulsera Carresol Cadena",
+    "categoria": "pulseras",
+    "precio": 95,
+    "descripcion": "Cadena fina ajustable para uso diario.",
+    "imagen": "assets/img/pulseras/pulsera-carresol-cadena.jpg",
+    "alt": "Pulsera Carresol de cadena fina"
+  },
+  {
+    "id": 13,
+    "nombre": "Pulsera Carresol Diamantes",
+    "categoria": "pulseras",
+    "precio": 640,
+    "descripcion": "Tenis de diamantes con cierre de seguridad.",
+    "imagen": "assets/img/pulseras/pulsera-carresol-diamantes.jpg",
+    "alt": "Pulsera tenis Carresol con diamantes"
+  },
+  {
+    "id": 14,
+    "nombre": "Pulsera Carresol Perlas",
+    "categoria": "pulseras",
+    "precio": 150,
+    "descripcion": "Hilo de perlas con broche dorado.",
+    "imagen": "assets/img/pulseras/pulsera-carresol-perlas.jpg",
+    "alt": "Pulsera Carresol de perlas con broche"
+  },
+  {
+    "id": 15,
+    "nombre": "Pulsera Carresol Eslabón",
+    "categoria": "pulseras",
+    "precio": 175,
+    "descripcion": "Eslabones anchos tipo Figaro.",
+    "imagen": "assets/img/pulseras/pulsera-carresol-eslabon.jpg",
+    "alt": "Pulsera Carresol de eslabones Figaro"
+  },
+  {
+    "id": 16,
+    "nombre": "Anillo Carresol Solitario",
+    "categoria": "anillos",
+    "precio": 480,
+    "descripcion": "Solitario de diamante en oro amarillo.",
+    "imagen": "assets/img/anillos/anillo-carresol-solitario.jpg",
+    "alt": "Anillo solitario Carresol con diamante"
+  },
+  {
+    "id": 17,
+    "nombre": "Anillo Carresol Compromiso",
+    "categoria": "anillos",
+    "precio": 720,
+    "descripcion": "Anillo de compromiso con piedra central.",
+    "imagen": "assets/img/anillos/anillo-carresol-compromiso.jpg",
+    "alt": "Anillo de compromiso Carresol"
+  },
+  {
+    "id": 18,
+    "nombre": "Anillo Carresol Banda",
+    "categoria": "anillos",
+    "precio": 140,
+    "descripcion": "Banda lisa pulida en oro de 14k.",
+    "imagen": "assets/img/anillos/anillo-carresol-banda.jpg",
+    "alt": "Anillo banda Carresol en oro"
+  },
+  {
+    "id": 19,
+    "nombre": "Anillo Carresol Eternidad",
+    "categoria": "anillos",
+    "precio": 390,
+    "descripcion": "Banda con pequeños diamantes alrededor.",
+    "imagen": "assets/img/anillos/anillo-carresol-eternidad.jpg",
+    "alt": "Anillo eternidad Carresol con diamantes"
+  },
+  {
+    "id": 20,
+    "nombre": "Anillo Carresol Vintage",
+    "categoria": "anillos",
+    "precio": 310,
+    "descripcion": "Diseño de inspiración vintage con grabado.",
+    "imagen": "assets/img/anillos/anillo-carresol-vintage.jpg",
+    "alt": "Anillo vintage Carresol con grabado"
+  },
+  {
+    "id": 21,
+    "nombre": "Aretes Carresol Perla",
+    "categoria": "aretes",
+    "precio": 130,
+    "descripcion": "Aretes de perla con base dorada.",
+    "imagen": "assets/img/aretes/aretes-carresol-perla.jpg",
+    "alt": "Aretes Carresol de perla"
+  },
+  {
+    "id": 22,
+    "nombre": "Aretes Carresol Aro",
+    "categoria": "aretes",
+    "precio": 110,
+    "descripcion": "Aros medianos en baño de oro.",
+    "imagen": "assets/img/aretes/aretes-carresol-aro.jpg",
+    "alt": "Aretes aro Carresol dorados"
+  },
+  {
+    "id": 23,
+    "nombre": "Aretes Carresol Diamante",
+    "categoria": "aretes",
+    "precio": 560,
+    "descripcion": "Aretes tipo stud con diamantes.",
+    "imagen": "assets/img/aretes/aretes-carresol-diamante.jpg",
+    "alt": "Aretes stud Carresol con diamantes"
+  },
+  {
+    "id": 24,
+    "nombre": "Aretes Carresol Gota",
+    "categoria": "aretes",
+    "precio": 195,
+    "descripcion": "Aretes de gota con cristal brillante.",
+    "imagen": "assets/img/aretes/aretes-carresol-gota.jpg",
+    "alt": "Aretes gota Carresol brillantes"
+  },
+  {
+    "id": 25,
+    "nombre": "Aretes Carresol Argolla",
+    "categoria": "aretes",
+    "precio": 85,
+    "descripcion": "Argollas pequeñas ligeras para diario.",
+    "imagen": "assets/img/aretes/aretes-carresol-argolla.jpg",
+    "alt": "Argollas pequeñas Carresol"
+  }
+]

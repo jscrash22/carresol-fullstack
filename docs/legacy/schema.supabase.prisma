@@ -1,0 +1,75 @@
+// ============================================================
+// Variante Supabase / PostgreSQL (Apéndice A del Reto 2)
+// Para activarla:
+//   1. Copia este contenido a schema.prisma
+//   2. En .env:
+//      DATABASE_URL="postgresql://postgres.PROYECTO:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?pgbouncer=true"
+//      DIRECT_URL="postgresql://postgres.PROYECTO:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres"
+//      (si la conexión directa falla por IPv6, usa el Session pooler en DIRECT_URL)
+//   3. npx prisma migrate dev  (usa DIRECT_URL para migraciones)
+//   4. npx prisma db seed
+//
+// SEGURIDAD OBLIGATORIA (A01/A05 OWASP): Supabase expone las tablas del
+// esquema public en una API REST pública. Activa RLS con la migración SQL
+// incluida en prisma/migrations-sql/rls_supabase.sql (Prisma se conecta con
+// el rol postgres, que ignora RLS, por lo que el backend sigue funcionando).
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Producto {
+  id          Int             @id @default(autoincrement())
+  nombre      String          @db.VarChar(120)
+  descripcion String?         @db.VarChar(500)
+  categoria   String          @db.VarChar(40)
+  precio      Decimal         @db.Decimal(10, 2)
+  stock       Int             @default(0)
+  imagen      String?         @db.VarChar(255)
+  alt         String?         @db.VarChar(200)
+  createdAt   DateTime        @default(now())
+  detalles    PedidoDetalle[]
+
+  @@index([categoria])
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nombre       String   @db.VarChar(80)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @db.VarChar(100)
+  role         String   @default("user") @db.VarChar(10) // "admin" | "user"
+  createdAt    DateTime @default(now())
+  pedidos      Pedido[]
+}
+
+model Pedido {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  total     Decimal         @db.Decimal(10, 2)
+  createdAt DateTime        @default(now())
+  usuario   Usuario         @relation(fields: [userId], references: [id])
+  detalles  PedidoDetalle[]
+
+  @@index([userId])
+}
+
+model PedidoDetalle {
+  id             Int      @id @default(autoincrement())
+  pedidoId       Int
+  productoId     Int
+  cantidad       Int
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto       Producto @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
+  @@index([productoId])
+}

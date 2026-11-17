@@ -1,0 +1,88 @@
+=== SMOKE TEST Carresol API — http://localhost:3000 — 2026-11-10T22:36:27.721Z ===
+Backend: PostgreSQL real (modelo ER completo). Contraseñas: NO se imprimen.
+
+PASS ✓ 1. Login admin → 200 + token + rol admin — rol: admin
+PASS ✓ 2. Login usuario → 200 + rol user
+PASS ✓ 3. GET /api/productos público → ≥ 25 productos con variantes — total: 25, variante 1: REL-IMP-ORO
+PASS ✓ 4. Filtro por categoría anillos → 5 y solo anillos
+PASS ✓ 5. GET /api/productos/:id → detalle con materiales e imágenes
+PASS ✓ 6. Producto inexistente → 404 NO_ENCONTRADO
+PASS ✓ 7. Admin crea producto (payload clásico §6) → 201 con variante automática — id: 28, sku: REL-PRO-SMO-TES-ACE-NICA-AVEZ
+PASS ✓ 8. User crea producto → 403 PROHIBIDO
+PASS ✓ 9. POST /api/pedidos sin token → 401
+PASS ✓ 10. Token inválido → 401
+PASS ✓ 11. Registro con role:"admin" → queda user (anti mass-assignment) — rol real: user
+PASS ✓ 12. Email duplicado → 409
+PASS ✓ 13. Validación fallida → 422 con detalles por campo — 5 campos inválidos
+PASS ✓ 14. User crea dirección de envío → 201
+PASS ✓ 15. GET /api/direcciones → contiene la creada
+PASS ✓ 16. PUT /api/direcciones/:id parcial → 200
+PASS ✓ 17. PUT /api/carrito (sincronización local) → 200 con 1 item
+PASS ✓ 18. GET /api/carrito → mismo item con precio del servidor
+PASS ✓ 19. POST /api/carrito/items → incrementa cantidad
+PASS ✓ 20. DELETE /api/carrito/items/:varianteId → quita el item
+PASS ✓ 21a. Confirmar pedido → 201 con correlativo — pedido #17 (previo máx: 16)
+PASS ✓ 21b. Items con snapshot (sku, nombre, precio del servidor) — REL-IMP-ORO x2 = $900
+PASS ✓ 21c. Totales del servidor (subtotal + envío 10 + IVA 15%) — subtotal $900 + envío $10 + IVA $136.5 = $1046.5
+PASS ✓ 21d. Factura numerada 001-001-X con clave de acceso de 49 dígitos — 001-001-000000017, clave: 101120260100…
+PASS ✓ 21e. Pago con tarjeta aprobado (pasarela simulada) → pedido pagado
+PASS ✓ 21f. Envío con snapshot de la dirección
+PASS ✓ 22. GET mis-pedidos contiene el pedido con items y factura
+PASS ✓ 23. Stock descontado en BD — variante REL-IMP-ORO: 8 → 6
+PASS ✓ 24. Carrito del servidor vaciado tras el pedido
+PASS ✓ 25. Admin GET /api/pedidos → ve el pedido del user
+PASS ✓ 26. User GET /api/pedidos → 403
+PASS ✓ 26b. User cambia el estado de SU pedido → 403 (solo la tienda)
+PASS ✓ 27. User ve SU pedido por id → 200
+PASS ✓ 28. IDOR: otro usuario ve el pedido ajeno → 403 PROHIBIDO
+PASS ✓ 29. IDOR: user2 usa dirección de user1 → 403
+PASS ✓ 30. Stock insuficiente → 409 REGLA_NEGOCIO — Stock insuficiente de "Producto Smoke Test" (REL-PRO-SMO-TES-ACE-NICA-
+PASS ✓ 31. Pedido sin items → 422
+PASS ✓ 32. Admin cambia estado a preparando (+ historial)
+PASS ✓ 33. Admin despacha envío → pedido enviado con guía
+PASS ✓ 34. Admin marca entregado → historial completo — 4 entradas de historial
+PASS ✓ 35. Pedido con transferencia → pendiente (sin pago)
+PASS ✓ 35b. Dos facturas seguidas → secuencial consecutivo y sin repetir — 001-001-000000017 → 001-001-000000018
+PASS ✓ 36. Admin confirma pago → pedido pagado
+PASS ✓ 37. User cancela su pedido → stock repuesto y pago reembolsado — stock 0 → 1
+PASS ✓ 37b. Dos pedidos SIMULTÁNEOS sobre la última unidad → pasa exactamente uno — uno 201, otro 409 (REGLA_NEGOCIO)
+PASS ✓ 37c. Admin cancela un pedido → stock repuesto — stock 0 → 1
+PASS ✓ 38. User agrega favorito → 201
+PASS ✓ 39. GET /api/favoritos → contiene el producto con variantes
+PASS ✓ 40. DELETE /api/favoritos/:productoId → 200
+PASS ✓ 41. POST /api/contacto público (sin sesión) → 201
+PASS ✓ 42. User en bandeja de contacto → 403
+PASS ✓ 43. Admin ve la bandeja de mensajes
+PASS ✓ 44. Admin marca el mensaje como leído
+PASS ✓ 45. Admin crea proveedor → 201
+PASS ✓ 46. RUC duplicado → 409
+PASS ✓ 47. Admin edita proveedor → 200
+PASS ✓ 48. User en /api/proveedores → 403
+PASS ✓ 49. Admin crea compra → 201 en borrador con totales del servidor — compra #6: $15 + IVA $2.25 = $17.25
+PASS ✓ 50. Admin edita la compra en borrador → recalcula totales
+PASS ✓ 51. Compra borrador → ordenada
+PASS ✓ 52. Recepción de la compra → stock +4 en BD y fecha de recepción — variante REL-IMP-ORO: 6 → 10
+PASS ✓ 53. Segunda recepción → 409 (suma de stock EXACTAMENTE UNA vez) — Transición no permitida: de "recibida" a "recibida".
+PASS ✓ 53b. Editar una compra recibida → 409 (solo se edita en borrador)
+PASS ✓ 53c. Recibir una compra CANCELADA → 409 (nunca suma stock)
+PASS ✓ 54. Movimientos de inventario registran la compra (kardex)
+PASS ✓ 55. GET /api/inventario/stock-bajo → variantes a reponer — 3 variantes en stock mínimo
+PASS ✓ 56. Auditoría registra el alta del producto smoke con usuario — 3 filas de auditoría (productos INSERT)
+PASS ✓ 57. GET /api/admin/parametros → IVA 15% y punto 001-001
+PASS ✓ 58. PUT /api/admin/parametros/:clave → 200
+PASS ✓ 59. Resumen del negocio → conteos de las 22 tablas del ER — pedidos: 19, compras: 7, ventas: $8429.50
+PASS ✓ 60. /api/admin/usuarios sin passwordHash — usuarios: 5
+PASS ✓ 61. Ruta inexistente → 404 con forma de error consistente
+PASS ✓ 62. Limpieza: DELETE del producto smoke → borrado LÓGICO (tiene ventas) — logico: true (el historial de pedido_items conserva la referencia)
+PASS ✓ 63. ?inactivos=true con token admin incluye los productos inactivos — públicos: 25, con inactivos: 28
+PASS ✓ 64. ?inactivos=true ANÓNIMO se ignora (la lista pública es de activos) — 25 productos activos
+PASS ✓ 65. POST /api/auth/forgot-password → 200 con mensaje genérico + token (solo desarrollo) — token de 64 hex recibido (NO se imprime)
+PASS ✓ 66. Correo NO registrado → 200 con el MISMO mensaje (anti enumeración) — sin datos del usuario en la respuesta
+PASS ✓ 67. reset-password con token inventado → 401 genérico
+PASS ✓ 68. reset-password con token válido → 200 y la nueva contraseña funciona — contraseña restablecida y login correcto
+PASS ✓ 69. El token es de UN SOLO USO: reutilizarlo → 401
+PASS ✓ 70. La contraseña ANTERIOR ya no sirve → 401
+
+=========================================
+RESULTADO: 81 PASS / 0 FAIL
+=========================================

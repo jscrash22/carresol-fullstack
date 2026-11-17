@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Carresol — Joyería de lujo. Relojes, collares, pulseras, anillos y aretes." />
+  <title>Carresol | Joyería de lujo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+
+  <header class="header">
+    <div class="header__inner">
+      <a class="logo" href="#/inicio" aria-label="Carresol inicio">💎 Carresol</a>
+
+      <button id="btn-menu" class="btn-hamburguesa" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="menu-principal">☰</button>
+
+      <nav id="menu-principal" class="nav" aria-label="Navegación principal">
+        <a href="#/inicio">Inicio</a>
+        <a href="#/catalogo">Catálogo</a>
+        <a id="nav-cuenta" href="#/cuenta" hidden>Mi cuenta</a>
+        <a id="nav-admin" href="#/admin" hidden>Administración</a>
+        <a href="#/contacto">Contacto</a>
+      </nav>
+
+      <div class="contadores">
+        <button id="btn-cont-carrito" class="contador" aria-label="Abrir carrito de compras">🛒 <span id="cart-count">0</span></button>
+        <button id="btn-cont-fav" class="contador" aria-label="Ver favoritos">♥ <span id="fav-count">0</span></button>
+        <span id="saludo" class="saludo" hidden></span>
+        <button id="btn-salir" class="contador" hidden>Cerrar sesión</button>
+        <button id="btn-usuario" class="contador" aria-label="Iniciar sesión">👤</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="contenido">
+
+    <!-- ============ Vista: Inicio ============ -->
+    <section id="vista-inicio" class="hero">
+      <h1>Elegancia que brilla en cada detalle</h1>
+      <p>Descubre la colección exclusiva de Carresol</p>
+      <a class="btn btn-dorado" href="#/catalogo">Explorar catálogo</a>
+    </section>
+
+    <!-- ============ Vista: Catálogo ============ -->
+    <section id="vista-catalogo" class="seccion" hidden>
+      <h2>Nuestra colección</h2>
+      <div id="filtros" class="filtros" role="group" aria-label="Filtrar por categoría"></div>
+      <div id="grid-productos" class="grid" aria-live="polite" aria-label="Listado de productos"></div>
+      <nav id="paginacion" class="paginacion" aria-label="Navegación de páginas del catálogo"></nav>
+    </section>
+
+    <!-- ============ Vista: Login / Registro ============ -->
+    <section id="vista-login" class="seccion login-seccion" hidden>
+      <h2>Tu cuenta</h2>
+      <p id="login-aviso" class="error" role="alert" aria-live="assertive"></p>
+      <div class="tabs" role="tablist" aria-label="Opciones de cuenta">
+        <button id="tab-login" class="filtro activo" type="button" role="tab" aria-selected="true" aria-controls="form-login">Iniciar sesión</button>
+        <button id="tab-registro" class="filtro" type="button" role="tab" aria-selected="false" aria-controls="form-registro">Crear cuenta</button>
+      </div>
+
+      <form id="form-login" novalidate>
+        <div class="campo">
+          <label for="login-email">Correo electrónico *</label>
+          <input type="email" id="login-email" name="email" autocomplete="email" required maxlength="150" aria-describedby="error-login-email" />
+          <span id="error-login-email" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="login-password">Contraseña *</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" required aria-describedby="error-login-password" />
+          <span id="error-login-password" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <button type="submit" class="btn btn-dorado">Entrar</button>
+      </form>
+
+      <form id="form-registro" novalidate hidden>
+        <div class="campo">
+          <label for="reg-nombre">Nombre completo *</label>
+          <input type="text" id="reg-nombre" name="nombre" autocomplete="name" required maxlength="80" aria-describedby="error-reg-nombre" />
+          <span id="error-reg-nombre" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="reg-email">Correo electrónico *</label>
+          <input type="email" id="reg-email" name="email" autocomplete="email" required maxlength="150" aria-describedby="error-reg-email" />
+          <span id="error-reg-email" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="reg-password">Contraseña *</label>
+          <input type="password" id="reg-password" name="password" autocomplete="new-password" required aria-describedby="error-reg-password reg-ayuda-password" />
+          <span id="error-reg-password" class="error" role="alert" aria-live="polite"></span>
+          <p id="reg-ayuda-password" class="ayuda-password">Requisitos: • 8+ caracteres • mayúscula • minúscula • número</p>
+        </div>
+        <button type="submit" class="btn btn-dorado">Crear cuenta</button>
+      </form>
+    </section>
+
+    <!-- ============ Vista: Mi cuenta (direcciones + mis pedidos) ============ -->
+    <section id="vista-cuenta" class="seccion" hidden>
+      <h2>Mi cuenta</h2>
+      <p id="cuenta-datos" class="ayuda-password"></p>
+      <!-- Las pestañas (Direcciones / Mis pedidos) y sus paneles las construye cuentaView -->
+    </section>
+
+    <!-- ============ Vista: Checkout (login obligatorio) ============ -->
+    <section id="vista-checkout" class="seccion" hidden>
+      <h2>Finalizar compra</h2>
+      <div id="checkout-contenido"></div>
+      <div id="checkout-exito" hidden></div>
+    </section>
+
+    <!-- ============ Vista: Administración (solo admin) ============ -->
+    <section id="vista-admin" class="seccion" hidden>
+      <h2>Panel de administración</h2>
+      <p class="ayuda-password">Resumen del negocio y gestión completa: productos, catálogo, pedidos, usuarios, proveedores, compras, inventario, mensajes, parámetros y auditoría.</p>
+      <div id="admin-tabs" class="filtros" role="tablist" aria-label="Secciones de administración"></div>
+      <!-- Los paneles y los modales de cada pestaña los construye adminView -->
+    </section>
+
+    <!-- ============ Vista: Contacto ============ -->
+    <section id="vista-contacto" class="seccion seccion-contacto" hidden>
+      <h2>Contacto</h2>
+      <form id="form-contacto" novalidate>
+        <div class="campo">
+          <label for="nombre">Nombre completo *</label>
+          <input type="text" id="nombre" name="nombre" aria-describedby="error-nombre" />
+          <span id="error-nombre" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="email">Correo electrónico *</label>
+          <input type="email" id="email" name="email" aria-describedby="error-email" />
+          <span id="error-email" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="telefono">Teléfono (opcional)</label>
+          <input type="tel" id="telefono" name="telefono" aria-describedby="error-telefono" />
+          <span id="error-telefono" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="campo">
+          <label for="mensaje">Mensaje * (10-500 caracteres)</label>
+          <textarea id="mensaje" name="mensaje" rows="5" aria-describedby="error-mensaje"></textarea>
+          <span id="error-mensaje" class="error" role="alert" aria-live="polite"></span>
+        </div>
+        <button type="submit" class="btn btn-dorado">Enviar</button>
+        <p id="form-exito" role="status" aria-live="polite" class="exito"></p>
+      </form>
+    </section>
+  </main>
+
+  <!-- ============ Panel del carrito (foco atrapado, Esc) ============ -->
+  <aside id="panel-carrito" class="panel-carrito" role="dialog" aria-modal="true" aria-labelledby="titulo-carrito" hidden>
+    <div class="panel-carrito__contenido">
+      <div class="panel-carrito__header">
+        <h2 id="titulo-carrito">Carrito</h2>
+        <button id="btn-cerrar-carrito" class="btn-cerrar" aria-label="Cerrar carrito">✕</button>
+      </div>
+      <div id="carrito-items"></div>
+      <p id="carrito-vacio" class="mensaje-vacio">Tu carrito está vacío.</p>
+      <p id="carrito-alerta" role="alert" aria-live="assertive" class="alerta"></p>
+      <div class="totales">
+        <p>Subtotal: <span id="subtotal">$0.00</span></p>
+        <p>IVA (15%): <span id="iva">$0.00</span></p>
+        <p><strong>Total: <span id="total">$0.00</span></strong></p>
+        <p class="fecha">Última actualización: <span id="fecha-actualizacion">—</span></p>
+      </div>
+      <div class="panel-carrito__acciones">
+        <button id="btn-vaciar" class="btn btn-rojo">Vaciar carrito</button>
+        <button id="btn-finalizar" class="btn btn-dorado">Finalizar compra</button>
+      </div>
+      <p class="ayuda-password">Para finalizar la compra debes iniciar sesión. El checkout te pedirá dirección, pago y datos de facturación; el servidor calcula los valores finales.</p>
+    </div>
+  </aside>
+
+  <!-- ============ Panel de favoritos ============ -->
+  <aside id="panel-favoritos" class="panel-carrito" role="dialog" aria-modal="true" aria-labelledby="titulo-favoritos" hidden>
+    <div class="panel-carrito__contenido">
+      <div class="panel-carrito__header">
+        <h2 id="titulo-favoritos">Favoritos</h2>
+        <button id="btn-cerrar-favoritos" class="btn-cerrar" aria-label="Cerrar favoritos">✕</button>
+      </div>
+      <div id="lista-favoritos" class="grid" style="grid-template-columns:1fr;"></div>
+      <p id="favoritos-vacio" class="mensaje-vacio" hidden>Aún no tienes favoritos. Explora el catálogo y marca tus piezas preferidas.</p>
+    </div>
+  </aside>
+
+  <footer class="footer">
+    <p>© 2026 Carresol — Joyería de lujo · Reto 2: Full Stack MVC (Frontend + API + BD)</p>
+  </footer>
+
+  <button id="btn-abrir-carrito" class="fab-carrito" aria-label="Abrir carrito de compras">🛒 <span id="cart-count-2">0</span></button>
+
+  <script type="module" src="controllers/appController.js"></script>
+</body>
+</html>

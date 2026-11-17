@@ -1,0 +1,36 @@
+PASS ✓ A1. Idioma del documento declarado (lang="es")
+PASS ✓ A2. Skip-link es el primer elemento enfocable del documento — primero enfocable: skip-link
+PASS ✓ A3. Skip-link se hace visible al recibir foco — left: 0px
+PASS ✓ A4. Foco visible (:focus-visible) con contorno — outline: solid 3px
+PASS ✓ A5. Imágenes del catálogo con alt descriptivo
+PASS ✓ A6. Tarjetas con aria-label del producto
+PASS ✓ B1. Modal con role=dialog, aria-modal y título asociado
+PASS ✓ B2. Selects del detalle con label accesible
+PASS ✓ B3. Info de variante en región aria-live=polite
+PASS ✓ B4. Foco atrapado dentro del modal (14 Tabs)
+PASS ✓ B5. Escape cierra el modal
+PASS ✓ B6. El foco vuelve al botón que abrió el modal — foco en: Ver detalle
+PASS ✓ B7. Confirmaciones con toast en región role=status
+PASS ✓ Contraste: precio de producto (dorado oscuro sobre blanco) — 7.46:1 (exigido 4.5:1)
+PASS ✓ C1. Panel del carrito con aria-label y controles con nombre
+PASS ✓ C2. Panel de favoritos accesible por teclado (focusable)
+PASS ✓ Contraste: filtro de categoría activo (blanco sobre dorado oscuro) — 5.30:1 (exigido 4.5:1)
+PASS ✓ Contraste: enlace de navegación (blanco sobre negro) — 19.44:1 (exigido 4.5:1)
+PASS ✓ D1. Todos los controles del checkout tienen nombre accesible
+PASS ✓ D2. Campos requeridos marcados (required o aria-required)
+PASS ✓ D3. Tabla de éxito con th[scope=row] (encabezados asociados)
+PASS ✓ E1. Pestañas de cuenta con role=tablist y flechas de teclado
+PASS ✓ E2. Flechas del teclado mueven las pestañas (aria-selected)
+PASS ✓ Contraste: badge de estado de pedido — 6.19:1 (exigido 4.5:1)
+PASS ✓ F1. Cliente sin rol admin NO entra al panel admin (403 redirige)
+PASS ✓ F2. Error de red mostrado con aviso y botón Reintentar — role=alert
+PASS ✓ F3. Reintentar recupera el catálogo tras la caída
+PASS ✓ G1. Admin con tablist ARIA y tabpanels asociados
+PASS ✓ Contraste: cifra del resumen admin — 5.09:1 (exigido 3:1)
+PASS ✓ G2. Modal admin con foco atrapado (role=dialog)
+PASS ✓ H1. Sin desbordamiento horizontal en móvil (375px)
+
+=========================================
+RESULTADO: 31 PASS / 0 FAIL
+Capturas en docs/evidencias/capturas/ (01-18).
+=========================================
