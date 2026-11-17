@@ -1,0 +1,36 @@
+=== NUEVAS PRUEBAS §5 — 2026-11-17T15:40:06.296Z ===
+Frontend: http://localhost:5500 · API simulada (sin escrituras en Supabase)
+
+PASS ✓ Estático: ningún acceso directo a localStorage/sessionStorage fuera de almacenamiento.js — 31 archivos JS revisados
+PASS ✓ Aviso de demostración en registro, checkout y pie — apariciones=3
+
+PASS ✓ Filtro persiste al recargar la MISMA pestaña — aria-pressed=true
+PASS ✓ Tras reabrir: carrito y favoritos siguen (localStorage) — carrito=1 favoritos=1
+PASS ✓ Tras reabrir: sessionStorage vacío — claves=0
+PASS ✓ Vista nueva arranca sin filtros (sessionStorage por pestaña)
+PASS ✓ Vista nueva sin hash muestra el inicio
+PASS ✓ Login → F5 sigue logueado (sessionStorage)
+PASS ✓ Login → ventana nueva NO está logueada
+PASS ✓ Usuario A: carrito guardado con dueño — dueño=2
+PASS ✓ Cerrar sesión limpia carrito/espejo/borradores/dueño — carrito=0 dueño=invitado token=null
+PASS ✓ A cierra sesión y B entra: B NO ve el carrito de A — carrito=0 dueño=3
+PASS ✓ Invitado con carrito + login → fusión vía PUT /api/carrito — PUTs=1 items=1
+PASS ✓ Token expirado al arrancar: sesión cerrada sin /auth/me y con aviso — token=null aviso=true
+PASS ✓ Sesión caduca en checkout: conserva carrito y recuerda destino — carrito=1 destino=#/checkout
+PASS ✓ Tras volver a entrar se reanuda el checkout — http://localhost:5500/#/checkout
+PASS ✓ Comprar 2 unidades descuenta stock en tarjeta sin recargar manualmente — "Stock: 10" → "Stock: 8"
+PASS ✓ Etiqueta de stock usa clases accesibles — stock
+PASS ✓ Pestaña Usuarios ofrece cambiar rol/estado
+PASS ✓ Modal de usuario es accesible (role=dialog, aria-modal)
+PASS ✓ Miniatura de producto con texto alternativo — alt="Anillo de prueba con vista frontal"
+PASS ✓ Vista previa de imágenes con aria-live
+PASS ✓ Editor permite dos imágenes
+PASS ✓ UI rechaza URL javascript: — URL de imagen no permitida: "javascript:alert(1)". Usa assets/img/... o https://
+PASS ✓ Producto con 2 imágenes deja exactamente una principal — principales=1
+PASS ✓ API desplegada /api/health
+PASS ✓ API desplegada /api/productos → 25 — n=25
+BLOCKED ▸ GET /api/config-publica en producción — el código nuevo aún no está desplegado; se verificará en §7 tras el push
+BLOCKED ▸ 413 consistente en producción — el código nuevo aún no está desplegado; se verificó localmente con node --check y revisión de middleware
+
+RESUMEN: 27 PASS · 0 FAIL · 2 BLOCKED
+BLOCKED = requiere BD accesible o despliegue pendiente; ver docs/BLOQUEOS.md y su Plan B.

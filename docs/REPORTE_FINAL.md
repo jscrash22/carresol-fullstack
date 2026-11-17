@@ -22,12 +22,12 @@ fases descrito en `docs/prompts/PROMPT_CONTINUACION_OPENCODE.md`.
 | Seguridad: JWT Bearer, roles, CORS whitelist, bcrypt, validación/sanitización, errores sin stacktrace, logger | ✅ | `server/app.js`, `server/middleware/*`; smoke 9-10, 13, 61 |
 | README con ≥ 3 riesgos OWASP y su mitigación | ✅ | `README.md`, sección «Seguridad» (5 riesgos con archivo/línea) |
 | Catálogo desde la API en el frontend | ✅ | E2E 1-6 (paginación de 8 por página) |
-| Carrito persistente (localStorage) | ✅ | E2E 7-10, 15 (sync con servidor al login) |
+| Carrito persistente con dueño (localStorage de invitado; sesión y borradores en sessionStorage) | ✅ | E2E 7-10, 15; `e2e-super-prompt.txt` |
 | Login obligatorio para comprar | ✅ | E2E 16 (`#/checkout` exige sesión) |
 | Checkout que envía a `POST /api/pedidos` | ✅ | E2E 17-19 |
 | Panel admin: CRUD productos + vista de todas las tablas, solo visible para admin | ✅ | E2E 32-36; 11 pestañas; 403 de user verificado (a11y F1) |
 | Accesibilidad: HTML semántico, teclado, foco visible, labels, ARIA, contraste AA | ✅ | `docs/evidencias/accesibilidad.txt` (31 PASS) |
-| Entregable `Reto2_Apellido_Nombre.zip` sin `node_modules` ni `.env` | ✅ | `Reto2_Carresol.zip` (renombrar con Apellido_Nombre, ver §6) |
+| Entregable `Reto2_Carresol.zip` sin `node_modules` ni `.env` | ✅ | Nombre default confirmado por el usuario (B02); se regenera al final |
 | `.env.example` sin secretos y `README.md` completo | ✅ | `server/.env.example`, `README.md` |
 
 ### Las 7 pruebas mínimas (con evidencia)
@@ -101,7 +101,7 @@ ejemplo y parámetros.
 
 Ejecutadas contra el backend y PostgreSQL reales (contraseñas nunca impresas):
 
-- **Smoke test backend: 81 PASS / 0 FAIL** → `docs/evidencias/smoke-test.txt`
+- **Smoke test backend: 81 PASS / 0 FAIL** → `docs/evidencias/smoke-test-local.txt`
 - **E2E frontend (Playwright headless, Edge del sistema): 37 PASS / 0 FAIL** →
   `docs/evidencias/e2e-frontend.txt`
 - **Accesibilidad: 31 PASS / 0 FAIL** → `docs/evidencias/accesibilidad.txt`
@@ -109,6 +109,10 @@ Ejecutadas contra el backend y PostgreSQL reales (contraseñas nunca impresas):
 - **18 capturas** de todas las vistas → `docs/evidencias/capturas/01-18-*.png`
 - Línea base previa a la migración: `docs/evidencias/smoke-test-baseline.txt`
 - Ejemplos de uso de la API: `docs/evidencias/ejemplos-endpoints.md`
+- **Nuevas pruebas del super prompt: 27 PASS / 0 FAIL / 2 BLOCKED** →
+  `docs/evidencias/e2e-super-prompt.txt` (API simulada; sin escrituras en Supabase).
+- **Verificación final: 12 PASS / 0 FAIL / 2 PENDIENTES** →
+  `docs/evidencias/verificacion-final.txt` (2 pendientes por redespliegue de Render).
 
 ---
 
@@ -149,12 +153,12 @@ documentación**: viven solo en `server/.env` (`SEED_ADMIN_PASSWORD` y
 | Cliente Prueba | `cliente@carresol.com` | `ver server/.env` | user |
 
 > Las contraseñas se **rotaron** para el despliegue en Supabase (generadas con
-> `crypto.randomBytes`). Si necesitas las actuales, están en `server/.env` o en el
-> archivo local `render-variables-SECRETO.md` del escritorio (bórralo al terminar).
+> `crypto.randomBytes`). Viven solo en `server/.env` (ignorado por git). Si viajaron por
+> chat, deben rotarse de nuevo antes de entregar; nunca se incluyen en este reporte ni en
+> el zip.
 
-> ⚠️ El zip del entregable se generó como **`Reto2_Carresol.zip`**: renómbralo a
-> **`Reto2_Apellido_Nombre.zip`** con tus datos antes de entregarlo (no se solicitó el
-> nombre durante el desarrollo; ver `docs/BLOQUEOS.md`, B02).
+> El entregable se genera como **`Reto2_Carresol.zip`**: el usuario confirmó «usa el
+> default amigo», así que no hace falta renombrarlo (ver `docs/BLOQUEOS.md`, B02).
 
 ---
 
@@ -162,9 +166,9 @@ documentación**: viven solo en `server/.env` (`SEED_ADMIN_PASSWORD` y
 
 Decisiones por fase (detalle en `docs/DECISIONES.md`):
 
-- **Plan B de BD (B03→B01):** PostgreSQL local (puerto 5432, BD `carresol`) en lugar de
-  Supabase/SQL Server. Migrar a Supabase = editar `.env` + `npx prisma migrate deploy` +
-  `npm run db:seed` + activar RLS (plan en `docs/legacy/rls_supabase.sql`).
+- **BD (histórico B01/B03):** se usó PostgreSQL local solo mientras se obtenía la conexión.
+  **Estado final:** Supabase conectado, migración `20261117000000_rls_public` aplicada y API
+  desplegada. No hay plan de RLS pendiente: el SQL antiguo quedó solo como historial.
 - **BigInt → Number** y DECIMAL → Number al salir de los modelos (JSON plano).
 - **Pago y facturación simulados** (sin pasarela real ni SRI); la clave de acceso de 49
   dígitos es generada.
@@ -179,22 +183,24 @@ Decisiones por fase (detalle en `docs/DECISIONES.md`):
 
 Bloqueos y pendientes del estudiante (detalle en `docs/BLOQUEOS.md`):
 
-- **B01**: activar RLS en Supabase al migrar (SQL listo en `docs/legacy/rls_supabase.sql`).
-- **B02**: renombrar el zip con Apellido/Nombre.
-- **B04**: Render u otro host al desplegar (instrucciones en el README, pendiente de
-  cuenta del estudiante).
+- **B01/B03/B07**: resueltos o históricos; Supabase y RLS ya están activos (`REPORTE_DESPLIEGUE.md`).
+- **B02**: resuelto: `Reto2_Carresol.zip`.
+- **B04/B06**: históricos (Render desplegado; contraseñas limpias, rotar si viajaron por chat).
+- **B08/B09/B10/B11**: vigentes: egress local a Supabase, `npm audit` aceptado, redespliegue
+  pendiente de las rutas nuevas y arranque en frío mitigado con keepalive. Ver `BLOQUEOS.md`.
 
 ---
 
 ## 8. Qué debe revisar o completar el estudiante a mano
 
-1. **Renombrar el zip** a `Reto2_Apellido_Nombre.zip` (B02).
-2. **Si usa Supabase**: crear el proyecto, copiar las cadenas al `.env` y ejecutar el SQL
-   de RLS (B01).
-3. **Despliegue** en Render/Railway/Fly siguiendo el README (B04).
-4. **Correo real** para la recuperación de contraseña (los endpoints están listos; en
-   producción no se devuelve el token).
-5. Revisar `docs/DECISIONES.md` y `docs/BLOQUEOS.md` antes de entregar: recogen todas las
+1. **Rotar credenciales** de Supabase y del seed si viajaron por chat (B01/B06); nunca
+   pegarlas en archivos del repo.
+2. **Tras el push**, esperar el redeploy de Render y repetir las 2 comprobaciones pendientes
+   de `docs/evidencias/verificacion-final.txt` (config pública y 413 unificado).
+3. **Opcional**: conectar un servicio de correo para la recuperación de contraseña (en
+   producción el token no se devuelve a propósito) y migrar a Prisma 7 cuando sea seguro.
+4. Revisar `docs/DECISIONES.md` y `docs/BLOQUEOS.md` antes de entregar: recogen todas las
    decisiones técnicas y sus porqués.
-6. La BD local quedó con datos de prueba (pedidos, compras, mensajes y usuarios smoke de
-  las verificaciones); el seed es idempotente y puede re-sembrarse sin limpiar nada.
+5. La BD real es Supabase: **no ejecutar** `db:reset`, `db:seed` ni pruebas de escritura
+   contra producción sin una copia (B08). El respaldo JSON está listo en
+   `server/scripts/respaldo-json.js`.

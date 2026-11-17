@@ -389,6 +389,7 @@ tbody tr:nth-child(even) { background: var(--blanco-roto); }
   line-height: 1.45;
 }
 .footer .aviso-demo { max-width: 60rem; margin: 0.6rem auto 0; text-align: left; }
+.lista-favoritos { grid-template-columns: 1fr; }
 
 .stock.stock-bajo { color: #9a5b00; font-weight: 600; }
 .stock.agotado { color: #b00020; font-weight: 600; }

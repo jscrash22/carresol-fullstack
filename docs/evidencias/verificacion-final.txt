@@ -1,0 +1,19 @@
+=== VERIFICACIÓN FINAL — 2026-11-17T15:43:51.828Z ===
+Sin escrituras en Supabase. Contraseñas: NO se imprimen.
+
+PASS ✓ node --check en 84 archivos JS — sin errores
+PASS ✓ Body limit 64kb y error LIMITE_BODY
+PASS ✓ Sin stacktraces en respuestas de error
+PASS ✓ /api/config-publica con caché de 60 s
+PASS ✓ Validador de imágenes rechaza javascript/data/http/..
+PASS ✓ El seed aborta con contraseñas ausentes o cortas
+PASS ✓ .env.example documenta DIRECT_URL/RATE_*/NODE_VERSION
+PASS ✓ Workflow keepalive con workflow_dispatch
+PASS ✓ GET /api/health → 200 — status=200
+PASS ✓ GET /api/productos → 25 productos — n=25
+PASS ✓ CORS rechaza origen ajeno
+PASS ✓ CORS permite el origen del frontend
+PENDIENTE ▸ GET /api/config-publica en producción — despliegue pendiente; la ruta existe en el código local
+PENDIENTE ▸ Body excesivo → 413 en producción — status=500; despliegue pendiente
+
+RESUMEN: 12 PASS · 0 FAIL · 2 PENDIENTE

@@ -9,7 +9,7 @@ Cada fase agrega sus decisiones al final de este archivo.
 
 | Pregunta | Respuesta / default aplicado |
 |---|---|
-| Apellido y nombre para el zip | **No se recibió** → el entregable se genera como `Reto2_Carresol.zip` (renombrable a mano, ver `docs/BLOQUEOS.md`). |
+| Apellido y nombre para el zip | El usuario confirmó «usa el default amigo» → `Reto2_Carresol.zip` (ver `docs/BLOQUEOS.md`, B02). |
 | Dónde corre PostgreSQL | **Supabase elegido** por el estudiante, pero el archivo `conexión supabase.txt` del escritorio llegó **vacío (0 bytes)**: solo se recibió la contraseña, sin la referencia del proyecto/host. **Plan B aplicado: PostgreSQL 16 local portable** (ver BLOQUEOS.md). |
 | Credenciales de seed | Default: `admin@carresol.com` y `cliente@carresol.com`; contraseñas fuertes generadas con `crypto.randomBytes` (solo en `.env` y `REPORTE_FINAL.md`). |
 | Módulo de compras | Default: **compras a proveedores que reponen el stock** (proveedores + órdenes de compra + recepción que suma inventario). |
@@ -27,7 +27,8 @@ Cada fase agrega sus decisiones al final de este archivo.
 - Entorno del estudiante: Windows 11, Node v24.21.0, git 2.55, **sin Docker ni psql instalados**.
   `npm.ps1` está bloqueado por la política de ejecución de PowerShell → en toda la documentación
   se usan comandos compatibles con PowerShell y `npm.cmd` cuando la terminal lo requiera.
-- Repositorio git inicializado en el proyecto para commits por fase (no existe `remote`, sin push).
+- Repositorio git inicializado en el proyecto para commits por fase (en ese momento sin `remote`;
+  el remote y el despliegue se añadieron en FASE 12).
 - El PDF `docs/diagrama_er_joyeria.pdf` (copiado de la carpeta Descargas del estudiante) no pudo
   ser leído por el runtime del agente (el modelo no soporta entrada PDF). Como el prompt indica
   que su transcripción del diagrama tiene prioridad, el modelo se implementó **desde la
@@ -35,10 +36,9 @@ Cada fase agrega sus decisiones al final de este archivo.
 
 ## FASE 2 — Base de datos PostgreSQL y modelo ER real
 
-- **Motor**: PostgreSQL 16 **portable** (binarios EDB en `C:\Users\jdavi\pgsql`, datos en
-  `C:\Users\jdavi\pgdata`), corriendo como proceso normal del usuario (sin Docker, sin servicio
-  de Windows, sin permisos de administrador). El `docker-compose.yml` del repo pasó a ser
-  `postgres:16` para quien tenga Docker (documentado en el README).
+- **Motor (histórico, superado en FASE 12)**: PostgreSQL 16 portable local, sin Docker ni
+  servicio de Windows. Las rutas personales de instalación se omiten. El `docker-compose.yml`
+  del repo usa `postgres:16` como opción local; la BD definitiva es Supabase.
 - **Contraseña de la BD local**: generada con `crypto.randomBytes` y guardada solo en
   `server/.env` como `DATABASE_URL`. La contraseña de Supabase recibida en la FASE 0 **no** se
   reutilizó ni se copió a ningún archivo del repo.
@@ -62,9 +62,10 @@ Cada fase agrega sus decisiones al final de este archivo.
   tabla `auditoria`, con `usuario_id` tomado de un `AsyncLocalStorage` por petición. Se eligió
   extensión JS en lugar de triggers SQL porque los triggers no pueden saber el `usuario_id`
   de la sesión que hizo el cambio.
-- **Sin RLS**: la BD es local (no Supabase), por lo que no aplica activar RLS; el SQL de RLS
-  quedó en `prisma/migrations-sql/rls_supabase.sql` (archivado) con instrucciones para cuando
-  la BD se mueva a Supabase (ver BLOQUEOS.md).
+- **Sin RLS (histórico)**: en la BD local no aplicaba RLS. El SQL quedó archivado, pero el
+  estado final es distinto: en FASE 12 se aplicó la migración de Prisma
+  `20261117000000_rls_public`, que activa RLS en todas las tablas de Supabase. Ver
+  `docs/REPORTE_DESPLIEGUE.md` y BLOQUEOS.md B01.
 - **Seed idempotente** (todo con `upsert`): roles, 2 usuarios, 5 categorías, materiales por
   categoría, los 25 productos del Reto 1 con ≥1 variante c/u (SKU único, stock 5–30,
   `tipo_medida` coherente con la categoría), imágenes principales apuntando a
@@ -93,7 +94,7 @@ Cada fase agrega sus decisiones al final de este archivo.
   4. Borrado **físico** de producto sin ventas violaba la FK `variantes_producto_id_fkey`
      (la FK RESTRICT de `pedido_items` es intencional para preservar historial; el resto de
      dependencias son CASCADE). Ahora el borrado físico limpia las variantes en la misma transacción.
-  5. `prisma/seed.js` quedó **doble-codificado** (UTF-8→CP1252→UTF-8) por un `Set-Content` de
+  5. `server/prisma/seed.js` quedó **doble-codificado** (UTF-8→CP1252→UTF-8) por un `Set-Content` de
      PowerShell usado para reemplazar la cédula. Reparado con mapeo inverso CP1252 (script
      desechable fuera del repo) y re-ejecutado el seed para re-verificar la idempotencia.
      **Lección**: nunca usar `Get-Content`/`Set-Content` de PowerShell sobre archivos UTF-8 con
@@ -101,13 +102,13 @@ Cada fase agrega sus decisiones al final de este archivo.
   6. La evidencia de línea base SQLite estaba en UTF-16 con mojibake CP850 (redirección `>` de
      PowerShell); convertida a UTF-8 legible en `docs/evidencias/smoke-test-baseline.txt`.
 - **Smoke test §9 ampliado**: **73 PASS / 0 FAIL** sobre una BD reseteada (`prisma migrate reset`
-  + seed), con evidencia en `docs/evidencias/smoke-test.txt` (UTF-8, escrita con
+  + seed), con evidencia en `docs/evidencias/smoke-test-local.txt` (UTF-8, escrita con
   `fs.writeFileSync`). Incluye los casos exigidos por §9 que faltaban en la primera versión:
   concurrencia sobre la última unidad (exactamente un 201 y un 409), facturas consecutivas sin
   repetir, user no puede cambiar el estado de su pedido, admin cancela y repone stock, no se
   edita una compra recibida, no se recibe una compra cancelada.
 - **`docs/evidencias/ejemplos-endpoints.md`**: requests/responses reales generados con
-  `scripts/ejemplos-endpoints.js`; JWT y contraseñas enmascarados (`<JWT_OMITIDO>`) y verificado
+  `server/scripts/ejemplos-endpoints.js`; JWT y contraseñas enmascarados (`<JWT_OMITIDO>`) y verificado
   automáticamente contra los valores reales de `.env` (0 filtraciones).
 
 ## FASE 4 — Pedidos transaccionales (contrato §6 del prompt; diseño verificado en FASE 3–7)
@@ -172,7 +173,7 @@ Cada fase agrega sus decisiones al final de este archivo.
 
 ## FASE 8 — Verificación (evidencias en `docs/evidencias/`)
 
-- Smoke test del backend ampliado a **75 PASS / 0 FAIL** (`smoke-test.txt`), incluidos los
+- Smoke test del backend ampliado a **75 PASS / 0 FAIL** (`smoke-test-local.txt`), incluidos los
   casos 63-64 del flag `?inactivos=true` (admin los ve, anónimo no).
 - E2E del frontend con **Playwright headless (canal msedge, Edge del sistema, sin descargar
   navegadores)**: **37 PASS / 0 FAIL** (`e2e-frontend.txt`): catálogo invitado, detalle con
@@ -244,14 +245,13 @@ Cada fase agrega sus decisiones al final de este archivo.
   entidad del ER y por el módulo de compras; resultados reales de las pruebas; arranque en
   pocos comandos; credenciales del seed (inyectadas desde `server/.env` con un script que
   jamás las imprime por consola); decisiones/bloqueos/planes B y tareas manuales pendientes.
-- Las credenciales del seed figuran SOLO en `server/.env` y en ese reporte (lo pide la spec);
-  el `README.md` muestra solo credenciales de ejemplo.
-- **`Reto2_Carresol.zip`** (renombrable, B02): staging con robocopy excluyendo
-  `node_modules`, `.git`, `server/certs`, `server/.env`, `dev.db`, logs y zips; comprimido
-  con `Compress-Archive` → **3,5 MB, 151 entradas**. Verificación en dos pasos: listado
-  (sin contenido prohibido) y **escaneo de secretos** del contenido extraído contra los
-  valores reales de `server/.env` (JWT_SECRET, DATABASE_URL, DIRECT_URL, POSTGRES_PASSWORD,
-  MSSQL_SA_PASSWORD) → 0 fugas en 103 archivos de texto.
+- Las credenciales del seed figuran SOLO en `server/.env` (el reporte muestra «ver server/.env»,
+  nunca valores). El `README.md` muestra solo credenciales de ejemplo.
+- **`Reto2_Carresol.zip`** (B02): esa primera versión se generó con `Compress-Archive` y
+  3,5 MB / 151 entradas. Fue **sustituida** por la regeneración final con `tar` (rutas con
+  `/`), descrita en FASE 15. Verificación en dos pasos: listado sin contenido prohibido y
+  **escaneo de secretos** del contenido extraído contra los valores reales de `server/.env`
+  → 0 fugas. Nunca se imprimen los valores.
 
 ## FASE 12 — Despliegue en la nube (GitHub → Supabase → Render → GitHub Pages)
 
@@ -267,8 +267,9 @@ Cada fase agrega sus decisiones al final de este archivo.
   tablas de `public` con un bloque `DO` dinámico (28/28 verificadas). Sin políticas: el rol
   `postgres` de Prisma la ignora y la API REST pública de Supabase queda bloqueada.
 - **Contraseñas del seed:** rotadas con `crypto.randomBytes` (18 caracteres). Viven solo en
-  `server/.env` y en `render-variables-SECRETO.md` del escritorio. `JWT_SECRET` de Render
-  nuevo (96 hex), distinto del local.
+  `server/.env`. `JWT_SECRET` de Render es nuevo (96 hex), distinto del local. Cualquier
+  archivo temporal de secretos que se haya creado fuera del repo debe borrarse; si las
+  contraseñas viajaron por chat, deben rotarse de nuevo.
 - **Frontend:** GitHub Pages con la Action `.github/workflows/pages.yml` (publica
   `frontend/`). `frontend/config.js` usa `localhost` en desarrollo y `API_PROD_URL` en
   cualquier otro host. Se añadió reintento (3 intentos, espera creciente) y aviso
@@ -307,3 +308,119 @@ Cada fase agrega sus decisiones al final de este archivo.
   usuario real → **prohibido** `db:reset` / `db:seed` destructivo y cualquier prueba sobre el
   stock de los 25 productos. Las pruebas nuevas crearán productos/variantes propios con
   prefijo `TEST-` vía API y limpiarán solo lo creado por ellas.
+
+---
+
+## FASE 14 — SUPER PROMPT §3: backend e infraestructura
+
+- **Endurecimiento**: `express.json({ limit: '64kb' })`; los arreglos siguen con topes
+  estrictos; CORS se dejó intacto (whitelist, nunca `*`). Códigos de error consistentes
+  `LIMITE_BODY` (413) y `NO_DISPONIBLE` (503). `errorHandler` ya no expone `err.stack`.
+- **Rate limits configurables** vía `RATE_LOGIN_MAX`, `RATE_REGISTER_MAX`,
+  `RATE_CONTACTO_MAX` y `RATE_RESET_MAX`. El login usa `skipSuccessfulRequests`: un inicio
+  de sesión **correcto no consume** el contador.
+- **Robustez**: `server.js` registra manejadores fatales, maneja `SIGTERM` y cierra Prisma;
+  los mensajes de error de BD se sanitizan. `TX_LARGA` (`maxWait` 10 s / `timeout` 20 s) se
+  aplicó en pedidos, compras y productos; los timeouts/conflictos se mapean a 503.
+- **Seed**: aborta si faltan `SEED_*_PASSWORD` o si alguna tiene menos de 10 caracteres
+  (verificado con una ejecución controlada); no hay contraseñas por defecto.
+- **Funciones nuevas aditivas**: `GET /api/config-publica` devuelve SOLO
+  `ivaPorcentaje`, `moneda` y `costoEnvioDefault` con caché `public, max-age=60`; soporte de
+  imágenes múltiples (`producto_imagenes`) manteniendo `imagen`/`alt` por compatibilidad;
+  `PATCH /api/admin/usuarios/:id` con salvaguardas de auto-desactivación y último admin,
+  auditado.
+- **Node**: `.node-version` = 24, `engines.node >= 20` y `NODE_VERSION: "24"` en Render
+  (validado contra la documentación de Render: la variable de entorno tiene prioridad).
+- **Keepalive**: `.github/workflows/keepalive.yml` (diario + `workflow_dispatch`) llama a
+  `GET /api/productos`, sin escribir datos.
+- **Riesgo aceptado**: `npm audit` reporta 3 avisos `high` por `prisma@6.19.3 →
+  @prisma/config → deepmerge-ts`. No se migró a Prisma 7 porque rompería migraciones/seed;
+  queda documentado en B09 y README.
+
+## FASE 14 — SUPER PROMPT §4: frontend
+
+- **§4.1 Diagnóstico real (Playwright, `launchPersistentContext` con `userDataDir` temporal)**:
+  - Antes de cerrar: `localStorage` contenía `carresol_carrito` y `carresol_favoritos`;
+    `sessionStorage` contenía `carresol_token` y `carresol_filtro_catalogo`.
+  - Al reabrir con el MISMO perfil en otra ventana (URL sin `#`): carrito y favoritos
+    reaparecieron (localStorage), `sessionStorage` estaba vacío y la vista era `#/inicio`.
+  - Causa real: **no hay persisting de pantalla**. Lo que " reaparece donde se dejó" es el
+    estado guardado en `localStorage` (carrito/favoritos) y, solo si la pestaña conserva la
+    URL, el hash. El token y los filtros mueren con la pestaña porque viven en
+    `sessionStorage`.
+  - No se encontró token en `localStorage` (riesgo XSS documentado: se prefiere
+    `sessionStorage` frente a una cookie no-`httpOnly` casera).
+- **Política aplicada**: nuevo módulo `frontend/models/almacenamiento.js` es el ÚNICO que
+  toca `localStorage`/`sessionStorage`, con prefijo `carresol_`, JSON seguro y fallback en
+  memoria si el navegador bloquea el almacenamiento. localStorage = carrito/favoritos de
+  invitado + dueño + versión; sessionStorage = token/usuario, filtros, pestaña admin, paso y
+  borradores; URL (hash) = vista. Verificación estática: 31 archivos JS, 0 accesos directos.
+- **Dueño y fugas entre cuentas**: el carrito/favoritos llevan dueño (`invitado` o id). Con
+  dueño invitado se fusionan con el servidor (PUT); con otro usuario se DESCARTAN y se carga
+  lo del servidor; al cerrar sesión (manual, 401 o expiración) se limpian carrito, espejo y
+  borradores. Excepción deliberada: si caduca la sesión **en checkout**, se conservan carrito
+  y borradores y se vuelve al checkout tras el login.
+- **JWT vencido**: se decodifica `exp` al arrancar; si venció se cierra la sesión **sin llamar
+  a la API** y se avisa en una región `aria-live`. Las vistas protegidas recuerdan su destino.
+- **Versión de carrito**: `carresol_carrito_v = 2`; los datos con formato anterior se descartan
+  con aviso. Evento `storage` sincroniza carrito y favoritos entre pestañas.
+- **§4.2 Stock**: catálogo expone `recargarCatalogo({silencioso})`, evento
+  `carresol:catalogo-invalidado` y frescura de 30 s. Se recarga al entrar a inicio/catálogo,
+  al abrir el carrito, al confirmar/fallar/cancelar pedidos y al editar productos/compras.
+  Etiquetas `Agotado` / `Quedan N` (N ≤ `stock_minimo`) / `Stock: N`. El carrito se revalida
+  contra precios y stock reales, recorta cantidades y avisa de cambios.
+- **§4.3 Imágenes**: editor multi-imagen con miniatura, URL, alt obligatorio, principal y
+  orden; vista previa con `aria-live` y debounce; validación local equivalente a la API
+  (`assets/img/...` o `https://`, sin `javascript:`, `data:`, `http:`, `//` ni `..`). Miniaturas
+  con alt en Productos, Inventario, Pedidos, Compras y selector de variantes de Compras.
+- **§4.4 Usuarios**: pestaña con_actions_ de rol/estado y modal `role="dialog"` con
+  confirmación accesible; el backend aplica las salvaguardas. Aviso de demostración en registro,
+  checkout y pie; no se implementó verificación de correo ni envío de emails (FAQ en README).
+- **§4.5 Calidad**: config pública con fallback a `config.js`, foco y `aria-*` en los nuevos
+  controles, `prefers-reduced-motion`, sin estilos inline (se migró `lista-favoritos` a CSS) y
+  comentarios engañosos corregidos.
+
+## FASE 14 — SUPER PROMPT §5–§6: pruebas y documentación
+
+- **Línea base sin regresiones**: 81/0 backend, 37/0 E2E, 31/0 accesibilidad (evidencias
+  archivadas). No se re-ejecutaron contra Supabase por B08.
+- **Nuevas pruebas reales**: `docs/evidencias/e2e-super-prompt.txt` → **27 PASS / 0 FAIL /
+  2 BLOCKED** con API simulada (Playwright + Edge, sin escrituras en la BD): almacenamiento
+  persistente, dueño, logout, A→B, fusión, JWT vencido, checkout reanudado, stock en tarjeta,
+  miniaturas con alt, editor de imágenes, URL peligrosa rechazada y modal accesible.
+- **`docs/evidencias/verificacion-final.txt`**: **12 PASS / 0 FAIL / 2 PENDIENTES**
+  (sintaxis de 84 JS, endurecimiento en código, health/productos/CORS en producción). Los 2
+  pendientes son config-publica y 413 en la URL pública: el código aún no está desplegado.
+- **Documentación**: enlaces corregidos al archivo real de evidencia local en README y reportes;
+  `smoke-test.js` escribe ahora en ese archivo. B01/B03/B07 se marcaron RESUELTOS/HISTÓRICOS
+  sin rutas personales ni contradicciones con `REPORTE_DESPLIEGUE.md`. `.env.example` corrige
+  `DIRECT_URL` (Session pooler 5432), añade `RATE_*` y `NODE_VERSION`, y ya no afirma que las
+  contraseñas del seed están documentadas. Se eliminan los dos archivos sueltos del prompt en
+  la raíz. Escaneo de secretos sobre `git ls-files`: solo archivo y línea, nunca valores.
+
+## FASE 15 — SUPER PROMPT §6/§7/§8: cierre, despliegue y entrega
+
+- **Limpieza de raíz**: el check-list suelto `# 🚀 DESPLIEGUE — … .md` se archivó como
+  `docs/prompts/DESPLIEGUE_CHECKLIST.md` y el `.txt` vacío se eliminó con `git rm`. No quedan
+  archivos del prompt sueltos en la raíz.
+- **Enlaces documentales**: `server/scripts/verificar-enlaces.js` recorre README y toda la
+  documentación (excluye `docs/prompts/`, que es histórico) y comprueba 92 rutas relativas →
+  **0 rotas** (`docs/evidencias/verificacion-enlaces.txt`). Acepta anotaciones `archivo.js:12-20`
+  y omite `server/.env` y `server/certs/` por ser secretos/opcional.
+- **Contradicciones resueltas**: `REPORTE_FINAL.md`, `README.md`, `DECISIONES.md` y
+  `BLOQUEOS.md` ya no contradicen `REPORTE_DESPLIEGUE.md`: Supabase y RLS están activos,
+  Render y Pages desplegados, B01/B03/B07 son históricos, B02 es el default confirmado.
+  Se eliminaron rutas personales de Windows de los documentos vigentes.
+- **Calidad final del frontend**: se migró el último estilo inline (`lista-favoritos`) a
+  `styles.css`; se añadieron `prefers-reduced-motion`, foco visible y `aria-live` en la vista
+  previa de imágenes; `node --check` pasó en los 31 archivos JS del frontend.
+- **Sin secretos**: no se imprimió ni copió ningún valor de `server/.env`. La rotación de
+  credenciales de Supabase/seed es una acción manual del estudiante (B01/B06); si viajaron
+  por chat, deben rotarse antes de entregar. No se hizo `git push --force`.
+- **Despliegue**: se hará `git merge mejoras-finales → main` y `git push origin main` (push
+  normal). Render reconstruirá la API y GitHub Pages publicará el frontend. Después se
+  repetirá `verificacion-final.js` para cerrar los 2 PENDIENTES de B10.
+- **Entregable**: se regenerará `Reto2_Carresol.zip` con `tar` (rutas con `/`), excluyendo
+  `.git`, `node_modules`, `server/.env`, `server/backups/`, SQLite, certificados y el zip
+  anterior. Se verificará el listado y se escaneará el contenido contra los valores reales
+  del `.env` sin imprimirlos.

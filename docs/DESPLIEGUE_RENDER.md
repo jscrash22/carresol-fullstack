@@ -24,9 +24,9 @@ El navegador del usuario carga el sitio de **GitHub Pages**; ese sitio llama por
 
 ## 2. Variables de entorno (sin valores reales)
 
-Estas son las variables que la API necesita en Render. Los valores reales están en
-`server/.env` (local) y en el archivo `render-variables-SECRETO.md` del escritorio
-(**bórralo al terminar**). Nunca se suben al repositorio.
+Estas son las variables que la API necesita en Render. Los valores reales están solo en
+`server/.env` (local) y en las variables del panel de Render. Nunca se suben al repositorio;
+si se creó un archivo temporal de secretos fuera del repo, bórralo al terminar.
 
 | Variable | De dónde sale | Ejemplo de forma |
 |---|---|---|

@@ -318,7 +318,7 @@ user creando producto → 403; catálogo visible en el frontend; carrito funcion
 confirmar pedido como user → queda en BD; admin ve todos los pedidos) pasan, junto con todo
 lo añadido:
 
-- **Smoke test backend: 81 PASS / 0 FAIL** (`docs/evidencias/smoke-test.txt`) — contra el
+- **Smoke test backend: 81 PASS / 0 FAIL** (`docs/evidencias/smoke-test-local.txt`) — contra el
   servidor y PostgreSQL reales: modelo ER completo, reglas de negocio, seguridad
   (401/403/409/422), pedidos transaccionales, compras, inventario, auditoría y
   recuperación de contraseña.
@@ -330,6 +330,15 @@ lo añadido:
   ARIA, contraste AA verificado en runtime y responsive; con 18 capturas en
   `docs/evidencias/capturas/`.
 - **Línea base** previa a los cambios: `docs/evidencias/smoke-test-baseline.txt`.
+- **Nuevas pruebas del super prompt: 27 PASS / 0 FAIL / 2 BLOCKED**
+  (`docs/evidencias/e2e-super-prompt.txt`) — almacenamiento por dueño, persistencia entre
+  pestañas, JWT vencido, fusión de carrito, reanudación del checkout, stock en tarjeta,
+  editor de imágenes y accesibilidad. Se ejecutaron con API simulada (Playwright) porque los
+  poolers de Supabase no son alcanzables desde la máquina y la BD real tiene pedidos ajenos.
+- **Verificación final estática + humo de solo lectura: 12 PASS / 0 FAIL / 2 PENDIENTES**
+  (`docs/evidencias/verificacion-final.txt`) — sintaxis de 84 archivos JS, endurecimiento del
+  backend y health/productos/CORS en la API pública. Los 2 pendientes son nuevas rutas que
+  requieren redespliegue de Render.
 
 ---
 
@@ -340,14 +349,16 @@ lo añadido:
 | `NODE_ENV` | `development`/`production`; fuera de producción el token de recuperación se devuelve para poder probarlo |
 | `PORT` | Puerto del backend (3000) |
 | `DATABASE_URL` | Cadena PostgreSQL (Docker/local/Supabase pooler) |
-| `DIRECT_URL` | Cadena directa para migraciones (Solo Supabase) |
+| `DIRECT_URL` | Cadena para migraciones. En Supabase apunta al **Session pooler (5432)**, no al host directo IPv6 |
 | `JWT_SECRET` | Secreto de firma JWT (aleatorio, ≥32 caracteres) |
 | `JWT_EXPIRES_IN` | Expiración de la sesión (`2h`) |
 | `CORS_ORIGIN` | Orígenes del frontend separados por coma (sin `*`) |
 | `HTTPS` | `true` solo con certificados en `server/certs/` |
 | `BCRYPT_ROUNDS` | Costo de bcrypt (12) |
 | `POSTGRES_PASSWORD` | Contraseña del contenedor PostgreSQL de docker-compose |
-| `SEED_ADMIN_*` / `SEED_USER_*` | Nombre, correo y contraseña de los usuarios del seed |
+| `SEED_ADMIN_*` / `SEED_USER_*` | Nombre, correo y contraseña de los usuarios del seed (≥ 10 caracteres; sin valores por defecto) |
+| `RATE_LOGIN_MAX` / `RATE_REGISTER_MAX` / `RATE_CONTACTO_MAX` / `RATE_RESET_MAX` | Límites de tasa por ventana de 15 min |
+| `NODE_VERSION` | Versión de Node en Render (`24`); `engines` y `.node-version` son respaldo |
 
 ---
 
@@ -374,7 +385,12 @@ controles; tablas con `th[scope]`; contraste AA verificado programáticamente (�
 - **Compras = reposición de inventario** a proveedores; recibir una compra suma stock una
   sola vez y lo registra en el kardex.
 - **Favoritos híbridos**: local para invitados, sincronizados con la cuenta al iniciar
-  sesión. **Carrito por variante** con tope `mín(10, stock)`.
+  sesión. **Carrito por variante** con tope `mín(10, stock)`. El carrito y los favoritos
+  llevan dueño: al cambiar de usuario se descarta lo del anterior y se carga lo del servidor.
+- **Almacenamiento del navegador**: `localStorage` solo para carrito/favoritos de invitado;
+  token, filtros, pestaña, paso y borradores viven en `sessionStorage` y mueren con la pestaña.
+  La vista depende del hash de la URL. Nunca se guardan contraseñas. Detalle en
+  `docs/DECISIONES.md` (FASE 14).
 - **Paginación del catálogo** de 8 productos por página (patrón del Reto 1 conservado).
 - BigInt → Number y DECIMAL → Number al salir de los modelos (JSON plano).
 
@@ -385,6 +401,9 @@ controles; tablas con `th[scope]`; contraste AA verificado programáticamente (�
   contraseña (los endpoints están listos).
 - Mejoras futuras: paginación en todos los listados, envío de correos, dashboard con
   gráficas, tests unitarios automatizados en CI.
+- **`npm audit`: 3 avisos `high`** en `prisma@6.19.3 → @prisma/config → deepmerge-ts`.
+  Riesgo **aceptado**: migrar a Prisma 7 rompería el flujo actual de migraciones/seed.
+  No hay secreto ni dato de usuario involucrado; ver `docs/BLOQUEOS.md` (B09).
 
 ## 🚢 Despliegue
 

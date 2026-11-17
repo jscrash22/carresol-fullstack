@@ -564,8 +564,15 @@ function editorImagenes(contenedor, producto) {
       const lista = valores();
       if (!lista.length) return null;
       if (lista.some((i) => !i.url)) return 'Toda imagen necesita una URL.';
+      const urlInvalida = lista.find((i) => {
+        const u = i.url.toLowerCase();
+        return /^(javascript|data|http):/i.test(u) || u.startsWith('//')
+          || u.includes('..') || !(u.startsWith('assets/img/') || u.startsWith('https://'));
+      });
+      if (urlInvalida) return `URL de imagen no permitida: "${urlInvalida.url}". Usa assets/img/... o https:// (sin javascript:, data:, http: ni ..).`;
       if (lista.some((i) => !i.altText)) return 'Toda imagen necesita texto alternativo.';
       if (!lista.some((i) => i.esPrincipal)) return 'Marca una imagen como principal.';
+      if (lista.filter((i) => i.esPrincipal).length > 1) return 'Solo una imagen puede ser principal.';
       return null;
     },
   };

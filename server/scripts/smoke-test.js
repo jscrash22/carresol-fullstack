@@ -5,7 +5,7 @@
 // Cubre las 7 pruebas mínimas del Reto 2 + el modelo ER completo:
 // variantes, direcciones, carrito, favoritos, contacto, compras a proveedores,
 // inventario, auditoría, facturación (001-001-X + clave de 49) y anti-IDOR.
-// La salida completa se guarda en docs/evidencias/smoke-test-postgres.txt (UTF-8).
+// La salida completa se guarda en docs/evidencias/smoke-test-local.txt (UTF-8).
 import 'dotenv/config';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +24,7 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !USER_EMAIL || !USER_PASSWORD) {
 
 // ---------- Reporte con evidencia en archivo (UTF-8) ----------
 const aqui = dirname(fileURLToPath(import.meta.url));
-const rutaEvidencia = join(aqui, '..', '..', 'docs', 'evidencias', 'smoke-test.txt');
+const rutaEvidencia = join(aqui, '..', '..', 'docs', 'evidencias', 'smoke-test-local.txt');
 const salida = [];
 function imprimir(texto = '') {
   console.log(texto);

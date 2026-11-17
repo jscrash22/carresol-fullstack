@@ -1,7 +1,8 @@
 # 🚀 Reporte de despliegue — Carresol Reto 2
 
-Fecha: 17/11/2026 · Sin secretos (las contraseñas y cadenas reales viven solo en
-`server/.env` y en `render-variables-SECRETO.md` del escritorio).
+Fecha: 17/11/2026 · Sin secretos: las contraseñas y cadenas reales viven solo en
+`server/.env` (ignorado por git). Los archivos temporales del escritorio deben borrarse y,
+si las credenciales viajaron por chat, rotarse.
 
 ## Resumen por fase
 
