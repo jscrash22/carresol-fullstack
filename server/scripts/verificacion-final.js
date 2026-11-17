@@ -93,7 +93,7 @@ try {
   const exceso = await fetch(`${BASE}/contacto`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: 'https://jscrash22.github.io' },
-    body: JSON.stringify({ nombre: 'x'.repeat(40 * 1024) }),
+    body: JSON.stringify({ nombre: 'x'.repeat(80 * 1024) }),
   });
   if (exceso.status === 413) check('Body excesivo → 413', true);
   else pend('Body excesivo → 413 en producción', `status=${exceso.status}; despliegue pendiente`);

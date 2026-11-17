@@ -330,15 +330,14 @@ lo añadido:
   ARIA, contraste AA verificado en runtime y responsive; con 18 capturas en
   `docs/evidencias/capturas/`.
 - **Línea base** previa a los cambios: `docs/evidencias/smoke-test-baseline.txt`.
-- **Nuevas pruebas del super prompt: 27 PASS / 0 FAIL / 2 BLOCKED**
+- **Nuevas pruebas del super prompt: 29 PASS / 0 FAIL / 0 BLOCKED**
   (`docs/evidencias/e2e-super-prompt.txt`) — almacenamiento por dueño, persistencia entre
   pestañas, JWT vencido, fusión de carrito, reanudación del checkout, stock en tarjeta,
   editor de imágenes y accesibilidad. Se ejecutaron con API simulada (Playwright) porque los
   poolers de Supabase no son alcanzables desde la máquina y la BD real tiene pedidos ajenos.
-- **Verificación final estática + humo de solo lectura: 12 PASS / 0 FAIL / 2 PENDIENTES**
-  (`docs/evidencias/verificacion-final.txt`) — sintaxis de 84 archivos JS, endurecimiento del
-  backend y health/productos/CORS en la API pública. Los 2 pendientes son nuevas rutas que
-  requieren redespliegue de Render.
+- **Verificación final estática + humo de solo lectura: 14 PASS / 0 FAIL / 0 PENDIENTES**
+  (`docs/evidencias/verificacion-final.txt`) — sintaxis de 86 archivos JS, endurecimiento del
+  backend, health/productos/CORS, config pública y `413` en la API ya desplegada.
 
 ---
 

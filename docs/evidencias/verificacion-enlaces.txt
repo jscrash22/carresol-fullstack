@@ -1,4 +1,4 @@
-=== VERIFICACIÓN DE RUTAS EN DOCUMENTACIÓN — 2026-11-17T16:03:09.874Z ===
+=== VERIFICACIÓN DE RUTAS EN DOCUMENTACIÓN — 2026-11-17T16:20:44.479Z ===
 PASS ✓ README.md → docs/DESPLIEGUE_RENDER.md
 PASS ✓ README.md → docker-compose.yml
 PASS ✓ README.md → frontend/index.html
@@ -65,6 +65,12 @@ PASS ✓ docs/DECISIONES.md → .github/workflows/keepalive.yml
 PASS ✓ docs/DECISIONES.md → frontend/models/almacenamiento.js
 PASS ✓ docs/DECISIONES.md → docs/evidencias/e2e-super-prompt.txt
 PASS ✓ docs/DECISIONES.md → docs/evidencias/verificacion-final.txt
+PASS ✓ docs/DECISIONES.md → docs/prompts/DESPLIEGUE_CHECKLIST.md
+PASS ✓ docs/DECISIONES.md → server/scripts/verificar-enlaces.js
+PASS ✓ docs/DECISIONES.md → docs/evidencias/verificacion-enlaces.txt
+PASS ✓ docs/DECISIONES.md → server/scripts/escanear-secretos.js
+PASS ✓ docs/DECISIONES.md → docs/evidencias/escaneo-secretos-repo.txt
+PASS ✓ docs/DECISIONES.md → server/backups/
 PASS ✓ docs/DESPLIEGUE_RENDER.md → render.yaml
 PASS ✓ docs/DESPLIEGUE_RENDER.md → frontend/config.js
 PASS ✓ docs/DESPLIEGUE_RENDER.md → .github/workflows/pages.yml
@@ -92,4 +98,4 @@ PASS ✓ docs/REPORTE_FINAL.md → docs/BLOQUEOS.md
 PASS ✓ docs/REPORTE_FINAL.md → docs/DECISIONES.md
 PASS ✓ docs/REPORTE_FINAL.md → server/scripts/respaldo-json.js
 
-RESUMEN: 92 rutas revisadas · 0 rotas
+RESUMEN: 98 rutas revisadas · 0 rotas

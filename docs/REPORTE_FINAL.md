@@ -109,10 +109,10 @@ Ejecutadas contra el backend y PostgreSQL reales (contraseñas nunca impresas):
 - **18 capturas** de todas las vistas → `docs/evidencias/capturas/01-18-*.png`
 - Línea base previa a la migración: `docs/evidencias/smoke-test-baseline.txt`
 - Ejemplos de uso de la API: `docs/evidencias/ejemplos-endpoints.md`
-- **Nuevas pruebas del super prompt: 27 PASS / 0 FAIL / 2 BLOCKED** →
+- **Nuevas pruebas del super prompt: 29 PASS / 0 FAIL / 0 BLOCKED** →
   `docs/evidencias/e2e-super-prompt.txt` (API simulada; sin escrituras en Supabase).
-- **Verificación final: 12 PASS / 0 FAIL / 2 PENDIENTES** →
-  `docs/evidencias/verificacion-final.txt` (2 pendientes por redespliegue de Render).
+- **Verificación final: 14 PASS / 0 FAIL / 0 PENDIENTES** →
+  `docs/evidencias/verificacion-final.txt` (API y frontend ya redesplegados).
 
 ---
 

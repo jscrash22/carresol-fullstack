@@ -1,4 +1,4 @@
-=== NUEVAS PRUEBAS §5 — 2026-11-17T15:40:06.296Z ===
+=== NUEVAS PRUEBAS §5 — 2026-11-17T16:16:59.660Z ===
 Frontend: http://localhost:5500 · API simulada (sin escrituras en Supabase)
 
 PASS ✓ Estático: ningún acceso directo a localStorage/sessionStorage fuera de almacenamiento.js — 31 archivos JS revisados
@@ -29,8 +29,8 @@ PASS ✓ UI rechaza URL javascript: — URL de imagen no permitida: "javascript:
 PASS ✓ Producto con 2 imágenes deja exactamente una principal — principales=1
 PASS ✓ API desplegada /api/health
 PASS ✓ API desplegada /api/productos → 25 — n=25
-BLOCKED ▸ GET /api/config-publica en producción — el código nuevo aún no está desplegado; se verificará en §7 tras el push
-BLOCKED ▸ 413 consistente en producción — el código nuevo aún no está desplegado; se verificó localmente con node --check y revisión de middleware
+PASS ✓ GET /api/config-publica en producción → solo campos permitidos — claves=costoEnvioDefault,ivaPorcentaje,moneda
+PASS ✓ Body excesivo → 413 en producción — status=413
 
-RESUMEN: 27 PASS · 0 FAIL · 2 BLOCKED
-BLOCKED = requiere BD accesible o despliegue pendiente; ver docs/BLOQUEOS.md y su Plan B.
+RESUMEN: 29 PASS · 0 FAIL · 0 BLOCKED
+Nota: las comprobaciones de la API pública se ejecutaron tras el push; no quedan bloqueos.

@@ -73,7 +73,7 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
   2. Línea base tomada de las evidencias archivadas (81/37/31) más comprobaciones de solo
      lectura contra la API pública.
   3. Las pruebas nuevas se ejecutaron con **API simulada** (Playwright + rutas interceptadas)
-     y datos `TEST-`, sin escrituras en Supabase; 27 PASS / 0 FAIL / 2 PENDIENTES.
+     y datos `TEST-`, sin escrituras en Supabase; 29 PASS / 0 FAIL / 0 BLOCKED tras el push.
   4. `server/scripts/respaldo-json.js` queda listo para ejecutarse cuando haya red con acceso
      a los poolers: desde `server/`, `node scripts/respaldo-json.js` (nunca versionar
      `server/backups/` ni imprimir su contenido).
@@ -87,13 +87,16 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
   actual. Riesgo **aceptado y documentado** en README. El parche, cuando se migre, es
   `npm i -D prisma@latest @prisma/client@latest` + revisar `schema.prisma` y los scripts.
 
-## B10 — Despliegue del código nuevo pendiente al cerrar esta fase (vigente)
+## B10 — Despliegue del código nuevo (RESUELTO)
 
-- Las rutas `GET /api/config-publica` y el código de error 413 unificado existen en el repo
-  pero **todavía no están en la URL pública** cuando se ejecutó la verificación final; por eso
-  2 comprobaciones quedan como PENDIENTES en `docs/evidencias/verificacion-final.txt`.
-- **Plan B**: el paso §7 describe el push a `main`, la espera al redeploy de Render y la
-  repetición de ambas comprobaciones. No se crearon datos de prueba en producción.
+- Al ejecutar la primera verificación las rutas nuevas aún no estaban en la URL pública; por
+  eso 2 comprobaciones aparecieron como PENDIENTES.
+- **Plan B aplicado**: `git merge mejoras-finales → main` y `git push origin main` (push normal,
+  sin `--force`). Render y GitHub Pages redesplegaron correctamente.
+- **Resultado final**: `docs/evidencias/verificacion-final.txt` → **14 PASS / 0 FAIL /
+  0 PENDIENTES**, incluidos `/api/config-publica` y el `413` unificado. Una de las primeras
+  comprobaciones había usado 40 KB (por debajo del límite de 64 KB); se corrigió a 80 KB.
+  No se crearon datos de prueba en producción.
 
 ## B11 — Arranque en frío y pausa del plan gratis (riesgo operativo, vigente)
 
@@ -118,5 +121,5 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
 | B07 | YA NO APLICA (histórico conservado) |
 | B08 | VIGENTE — egress local bloqueado; Plan B con API simulada |
 | B09 | VIGENTE — riesgo `npm audit` aceptado |
-| B10 | VIGENTE — redespliegue pendiente |
+| B10 | RESUELTO — push normal y verificación 14/0/0 |
 | B11 | VIGENTE — mitigado con keepalive y avisos |

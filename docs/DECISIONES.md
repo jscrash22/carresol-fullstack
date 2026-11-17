@@ -384,13 +384,14 @@ Cada fase agrega sus decisiones al final de este archivo.
 
 - **Línea base sin regresiones**: 81/0 backend, 37/0 E2E, 31/0 accesibilidad (evidencias
   archivadas). No se re-ejecutaron contra Supabase por B08.
-- **Nuevas pruebas reales**: `docs/evidencias/e2e-super-prompt.txt` → **27 PASS / 0 FAIL /
-  2 BLOCKED** con API simulada (Playwright + Edge, sin escrituras en la BD): almacenamiento
+- **Nuevas pruebas reales**: `docs/evidencias/e2e-super-prompt.txt` → **29 PASS / 0 FAIL /
+  0 BLOCKED** con API simulada para la UI (Playwright + Edge, sin escrituras en la BD) y API
+  pública real para health/productos/config/413: almacenamiento
   persistente, dueño, logout, A→B, fusión, JWT vencido, checkout reanudado, stock en tarjeta,
   miniaturas con alt, editor de imágenes, URL peligrosa rechazada y modal accesible.
-- **`docs/evidencias/verificacion-final.txt`**: **12 PASS / 0 FAIL / 2 PENDIENTES**
-  (sintaxis de 84 JS, endurecimiento en código, health/productos/CORS en producción). Los 2
-  pendientes son config-publica y 413 en la URL pública: el código aún no está desplegado.
+- **`docs/evidencias/verificacion-final.txt`**: **14 PASS / 0 FAIL / 0 PENDIENTES**
+  (sintaxis de 86 JS, endurecimiento en código, health/productos/CORS, config pública y 413
+  en la URL pública tras el redespliegue).
 - **Documentación**: enlaces corregidos al archivo real de evidencia local en README y reportes;
   `smoke-test.js` escribe ahora en ese archivo. B01/B03/B07 se marcaron RESUELTOS/HISTÓRICOS
   sin rutas personales ni contradicciones con `REPORTE_DESPLIEGUE.md`. `.env.example` corrige
@@ -404,8 +405,8 @@ Cada fase agrega sus decisiones al final de este archivo.
   `docs/prompts/DESPLIEGUE_CHECKLIST.md` y el `.txt` vacío se eliminó con `git rm`. No quedan
   archivos del prompt sueltos en la raíz.
 - **Enlaces documentales**: `server/scripts/verificar-enlaces.js` recorre README y toda la
-  documentación (excluye `docs/prompts/`, que es histórico) y comprueba 92 rutas relativas →
-  **0 rotas** (`docs/evidencias/verificacion-enlaces.txt`). Acepta anotaciones `archivo.js:12-20`
+  documentación (excluye `docs/prompts/`, que es histórico) y comprueba todas las rutas
+  relativas → **0 rotas** (`docs/evidencias/verificacion-enlaces.txt`). Acepta anotaciones `archivo.js:12-20`
   y omite `server/.env` y `server/certs/` por ser secretos/opcional.
 - **Contradicciones resueltas**: `REPORTE_FINAL.md`, `README.md`, `DECISIONES.md` y
   `BLOQUEOS.md` ya no contradicen `REPORTE_DESPLIEGUE.md`: Supabase y RLS están activos,
@@ -414,12 +415,16 @@ Cada fase agrega sus decisiones al final de este archivo.
 - **Calidad final del frontend**: se migró el último estilo inline (`lista-favoritos`) a
   `styles.css`; se añadieron `prefers-reduced-motion`, foco visible y `aria-live` en la vista
   previa de imágenes; `node --check` pasó en los 31 archivos JS del frontend.
+- **Escaneo de secretos**: `server/scripts/escanear-secretos.js` compara los valores reales de
+  `server/.env` contra el contenido versionado sin imprimirlos: 122 archivos de texto,
+  7 credenciales comprobadas, **0 fugas** (`docs/evidencias/escaneo-secretos-repo.txt`).
 - **Sin secretos**: no se imprimió ni copió ningún valor de `server/.env`. La rotación de
   credenciales de Supabase/seed es una acción manual del estudiante (B01/B06); si viajaron
   por chat, deben rotarse antes de entregar. No se hizo `git push --force`.
-- **Despliegue**: se hará `git merge mejoras-finales → main` y `git push origin main` (push
-  normal). Render reconstruirá la API y GitHub Pages publicará el frontend. Después se
-  repetirá `verificacion-final.js` para cerrar los 2 PENDIENTES de B10.
+- **Despliegue**: se hizo `git merge mejoras-finales → main` y `git push origin main` (push
+  normal, sin `--force`). Render reconstruyó la API y GitHub Pages publicó el frontend; el
+  HTML público ya contiene el aviso de demostración. `verificacion-final.js` cerró los 2
+  PENDIENTES de B10 y quedó en **14 PASS / 0 FAIL / 0 PENDIENTES**.
 - **Entregable**: se regenerará `Reto2_Carresol.zip` con `tar` (rutas con `/`), excluyendo
   `.git`, `node_modules`, `server/.env`, `server/backups/`, SQLite, certificados y el zip
   anterior. Se verificará el listado y se escaneará el contenido contra los valores reales
