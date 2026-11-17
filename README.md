@@ -392,7 +392,7 @@ controles; tablas con `th[scope]`; contraste AA verificado programáticamente (�
 |---|---|---|
 | Código | GitHub | https://github.com/jscrash22/carresol-fullstack |
 | Base de datos | Supabase (`us-east-1`) | panel de Supabase (referencia `tdapkdknamqvucmoarqc`) |
-| API | Render (`carresol-api`, free, Virginia) | pendiente de la primera compilación |
+| API | Render (`carresol-api`, free, Virginia) | https://carresol-api.onrender.com |
 | Frontend | GitHub Pages | https://jscrash22.github.io/carresol-fullstack/ |
 
 - **BD:** Supabase con el *Transaction pooler* en `DATABASE_URL` y el *Session pooler* en
