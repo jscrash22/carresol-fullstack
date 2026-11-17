@@ -79,14 +79,16 @@ if (hallazgos.length) {
 }
 console.log('Los valores de las credenciales NO se han impreso.');
 
-const evidencias = join(raiz, 'docs', 'evidencias');
-mkdirSync(evidencias, { recursive: true });
-const nombre = usarGit ? 'escaneo-secretos-repo.txt' : 'escaneo-secretos-zip.txt';
-writeFileSync(join(evidencias, nombre),
-  `Escaneo de secretos — ${new Date().toISOString()}\nObjetivo: ${usarGit ? 'git ls-files' : objetivo}\n`
-  + `Variables comprobadas: ${secretos.size} (valores nunca impresos)\n`
-  + `Archivos de texto revisados: ${revisados}\n`
-  + `Hallazgos: ${hallazgos.length}\n`
-  + hallazgos.map((h) => `  ${h}\n`).join(''), 'utf8');
+if (process.env.NO_EVIDENCIA !== '1') {
+  const evidencias = join(raiz, 'docs', 'evidencias');
+  mkdirSync(evidencias, { recursive: true });
+  const nombre = usarGit ? 'escaneo-secretos-repo.txt' : 'escaneo-secretos-zip.txt';
+  writeFileSync(join(evidencias, nombre),
+    `Escaneo de secretos — ${new Date().toISOString()}\nObjetivo: ${usarGit ? 'git ls-files' : objetivo}\n`
+    + `Variables comprobadas: ${secretos.size} (valores nunca impresos)\n`
+    + `Archivos de texto revisados: ${revisados}\n`
+    + `Hallazgos: ${hallazgos.length}\n`
+    + hallazgos.map((h) => `  ${h}\n`).join(''), 'utf8');
+}
 
 if (hallazgos.length) process.exitCode = 1;
