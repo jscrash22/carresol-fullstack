@@ -2,13 +2,23 @@
 import * as auth from '../models/authModel.js';
 import { toast, abrirModal, cerrarModal, mensajeEn } from '../views/uiComponents.js';
 import { cambiarTab, validarPassword, validarEmail, marcarCampo, mostrarErroresBackend } from '../views/loginView.js';
+import { sesion, CLAVES } from '../models/almacenamiento.js';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 
-let redirigirTrasLogin = null; // 'checkout' para volver al carrito tras iniciar sesión
-
 export function pedirVolverAlCheckout() {
-  redirigirTrasLogin = 'checkout';
+  sesion.set(CLAVES.DESTINO_TRAS_LOGIN, '#/checkout');
+}
+
+function destinoTrasLogin() {
+  const destino = sesion.get(CLAVES.DESTINO_TRAS_LOGIN, '#/catalogo') || '#/catalogo';
+  sesion.remove(CLAVES.DESTINO_TRAS_LOGIN);
+  return destino;
+}
+
+// Borrador SOLO del correo (nunca contraseñas) para no perderlo al recargar.
+function recordarCorreo(email) {
+  sesion.set(CLAVES.BORRADOR_LOGIN, { email });
 }
 
 export function inicializarAuth({ alCambiarSesion }) {
@@ -18,11 +28,15 @@ export function inicializarAuth({ alCambiarSesion }) {
   $('#tab-login').addEventListener('click', () => cambiarTab(vista, 'login'));
   $('#tab-registro').addEventListener('click', () => cambiarTab(vista, 'registro'));
 
+  const borrador = sesion.json(CLAVES.BORRADOR_LOGIN, null);
+  if (borrador?.email) $('#login-email').value = borrador.email;
+
   // ---- Login ----
   $('#form-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = $('#login-email').value.trim();
     const password = $('#login-password').value;
+    recordarCorreo(email);
     let valido = true;
     valido = marcarCampo($('#login-email'), $('#error-login-email'), validarEmail(email), 'Correo electrónico inválido.') && valido;
     valido = marcarCampo($('#login-password'), $('#error-login-password'), password.length > 0, 'Ingresa tu contraseña.') && valido;
@@ -35,9 +49,7 @@ export function inicializarAuth({ alCambiarSesion }) {
       toast(`¡Bienvenido/a, ${usuario.nombre}!`, 'ok');
       // Espera la sincronización de carrito/favoritos antes de navegar (§7)
       await alCambiarSesion(usuario);
-      const volver = redirigirTrasLogin;
-      redirigirTrasLogin = null;
-      location.hash = volver === 'checkout' ? '#/checkout' : '#/catalogo';
+      location.hash = destinoTrasLogin();
     } catch (err) {
       mensajeEn($('#login-aviso'), err.message, 'error');
     }
@@ -62,9 +74,7 @@ export function inicializarAuth({ alCambiarSesion }) {
       $('#form-registro').reset();
       toast(`Cuenta creada. ¡Bienvenido/a, ${usuario.nombre}!`, 'ok');
       await alCambiarSesion(usuario);
-      const volver = redirigirTrasLogin;
-      redirigirTrasLogin = null;
-      location.hash = volver === 'checkout' ? '#/checkout' : '#/catalogo';
+      location.hash = destinoTrasLogin();
     } catch (err) {
       if (err.detalles?.length) mostrarErroresBackend(vista, err);
       else mensajeEn($('#login-aviso'), err.message, 'error');

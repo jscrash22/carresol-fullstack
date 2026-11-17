@@ -9,6 +9,10 @@ export function listarUsuarios() {
   return api.get('/admin/usuarios');
 }
 
+export function cambiarUsuario(id, datos) {
+  return api.patch(`/admin/usuarios/${id}`, datos);
+}
+
 export function listarPedidos(estado) {
   const q = estado && estado !== 'todos' ? `?estado=${encodeURIComponent(estado)}` : '';
   return api.get(`/admin/pedidos${q}`);

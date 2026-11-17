@@ -5,6 +5,8 @@ import { formatearPrecio } from '../models/productoModel.js';
 import { esFavorito } from '../models/favoritosModel.js';
 import { abrirModal, cerrarModal } from './uiComponents.js';
 import { MAX_POR_VARIANTE } from '../config.js';
+import { urlImagenPrincipal, altImagenPrincipal } from '../models/carritoModel.js';
+import { etiquetaStock } from '../models/stockModel.js';
 
 let modal = null;
 
@@ -54,24 +56,24 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
   const colImg = document.createElement('div');
   const img = document.createElement('img');
   img.className = 'detalle-imagen';
-  img.src = producto.imagen || '';
-  img.alt = producto.alt || producto.nombre;
+  img.src = urlImagenPrincipal(producto) || '';
+  img.alt = altImagenPrincipal(producto) || producto.nombre;
   img.addEventListener('error', () => {
     img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400"><rect width="500" height="400" fill="%23d4af37"/><text x="50%" y="50%" fill="white" font-size="24" text-anchor="middle">Carresol</text></svg>';
   });
   colImg.appendChild(img);
-  const galeria = (producto.imagenes ?? []).filter((i) => i.url !== producto.imagen);
+  const galeria = (producto.imagenes ?? []).filter((i) => i.url !== urlImagenPrincipal(producto));
   if (galeria.length) {
     const miniaturas = document.createElement('div');
     miniaturas.className = 'detalle-miniaturas';
     for (const foto of galeria) {
       const mini = document.createElement('img');
       mini.src = foto.url;
-      mini.alt = foto.alt || `Foto de ${producto.nombre}`;
+      mini.alt = foto.altText || foto.alt || `Foto de ${producto.nombre}`;
       mini.setAttribute('role', 'button');
       mini.tabIndex = 0;
-      mini.setAttribute('aria-label', `Ver ${foto.alt || 'otra foto'}`);
-      const usar = () => { img.src = foto.url; img.alt = foto.alt || producto.nombre; };
+      mini.setAttribute('aria-label', `Ver ${foto.altText || foto.alt || 'otra foto'}`);
+      const usar = () => { img.src = foto.url; img.alt = foto.altText || foto.alt || producto.nombre; };
       mini.addEventListener('click', usar);
       mini.addEventListener('keydown', (e) => { if (e.key === 'Enter') usar(); });
       miniaturas.appendChild(mini);
@@ -115,13 +117,14 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
     infoVariante.textContent = '';
     if (!v) return;
     const stock = Number(v.stock ?? 0);
+    const estadoStock = etiquetaStock(stock, v.stockMinimo ?? 5);
     const linea1 = document.createElement('p');
     linea1.className = 'precio';
     linea1.textContent = `${formatearPrecio(v.precio)} · ${v.material}${v.medida ? ` (${v.tipoMedida === 'unica' ? 'talla única' : v.tipoMedida}: ${v.medida})` : ''}`;
     const linea2 = document.createElement('p');
     linea2.className = 'stock';
-    linea2.textContent = stock > 0 ? `Stock: ${stock}` : 'Agotado';
-    linea2.classList.toggle('agotado', stock <= 0);
+    linea2.textContent = estadoStock.texto;
+    linea2.className = `stock ${estadoStock.clase}`.trim();
     const linea3 = document.createElement('p');
     linea3.className = 'ayuda-password';
     linea3.textContent = `SKU: ${v.sku ?? '—'}`;

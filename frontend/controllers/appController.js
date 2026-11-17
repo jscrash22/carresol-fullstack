@@ -2,6 +2,9 @@
 // Vistas del Reto 2 (§7): inicio, catálogo, login, mi cuenta (direcciones y
 // pedidos), checkout, admin y contacto (ahora contra la API).
 import { sesionGuardada, cerrarSesionLocal, usuarioActual } from '../models/authModel.js';
+import { tokenExpirado } from '../models/apiClient.js';
+import { sesion, CLAVES } from '../models/almacenamiento.js';
+import { cargarConfiguracionPublica } from '../models/configModel.js';
 import * as catalogo from './catalogoController.js';
 import * as carritoCtrl from './carritoController.js';
 import * as cuentaCtrl from './cuentaController.js';
@@ -56,22 +59,34 @@ function rutaActual() {
   return VISTAS.includes(hash) ? hash : 'inicio';
 }
 
+// Las vistas protegidas recuerdan su destino en sessionStorage (§4.1): tras
+// iniciar sesión se vuelve automáticamente a ahí, incluso en el checkout.
+function protegida(ruta) {
+  if (!['cuenta', 'checkout', 'admin'].includes(ruta)) return false;
+  if (!sesionGuardada()) {
+    sesion.set(CLAVES.DESTINO_TRAS_LOGIN, `#/${ruta}`);
+    location.hash = '#/login';
+    toast('Inicia sesión para continuar; volveremos a esta vista.', 'info');
+    return true;
+  }
+  return false;
+}
+
 async function navegar(ruta) {
+  if (protegida(ruta)) { mostrarVista('login'); return; }
   mostrarVista(ruta);
-  if (ruta === 'cuenta') {
-    if (!sesionGuardada()) {
-      location.hash = '#/login';
-      toast('Inicia sesión para ver tu cuenta.', 'info');
-      return;
-    }
-    await cuentaCtrl.cargarCuenta();
+
+  // Frescura al entrar en inicio/catálogo: si los datos tienen >30 s se recarga
+  // en segundo plano (sin spinner); el evento actualiza tarjetas y carrito.
+  if ((ruta === 'inicio' || ruta === 'catalogo') && catalogo.datosAntiguos()) {
+    catalogo.recargarCatalogo({ silencioso: true });
   }
-  if (ruta === 'checkout') {
-    await cargarCheckout();
-  }
+
+  if (ruta === 'cuenta') await cuentaCtrl.cargarCuenta();
+  if (ruta === 'checkout') await cargarCheckout();
   if (ruta === 'admin') {
-    const sesion = sesionGuardada();
-    if (!sesion || sesion.usuario?.role !== 'admin') {
+    const sesionActual = sesionGuardada();
+    if (!sesionActual || sesionActual.usuario?.role !== 'admin') {
       location.hash = '#/inicio';
       toast('El panel de administración requiere una cuenta de administrador.', 'error');
       return;
@@ -111,8 +126,13 @@ function actualizarHeader(usuario) {
 // la sesión; aquí se avisa y se vuelve al login (regla del Reto 1 conservada).
 function inicializarSesionExpirada() {
   window.addEventListener('carresol:sesion-expirada', () => {
+    const enCheckout = rutaActual() === 'checkout';
+    carritoCtrl.alCerrarSesion({ conservarDatos: enCheckout });
     actualizarHeader(null);
-    toast('Tu sesión expiró. Inicia sesión de nuevo.', 'info');
+    sesion.set(CLAVES.DESTINO_TRAS_LOGIN, enCheckout ? '#/checkout' : '#/login');
+    toast(enCheckout
+      ? 'Tu sesión expiró. Tu carrito y borradores se conservan: vuelve a entrar para terminar el pedido.'
+      : 'Tu sesión expiró. Inicia sesión de nuevo.', 'info', 6000);
     if (rutaActual() !== 'login') location.hash = '#/login';
   });
 }
@@ -217,30 +237,41 @@ async function iniciar() {
   // Botón de cuenta: va a la vista de login (si ya hay sesión, redirige al catálogo)
   $('#btn-usuario').addEventListener('click', () => { location.hash = '#/login'; });
 
-  carritoCtrl.inicializar();
+  const avisosCarrito = carritoCtrl.inicializar();
   catalogo.inicializar({
     onVerDetalle: carritoCtrl.abrirDetalleProducto,
     onToggleFav: carritoCtrl.toggleFavorito,
   });
+  avisosCarrito.forEach((aviso) => toast(aviso, 'info', 6000));
+
+  // JWT vencido: se cierra SIN llamar a la API (§4.1.4) y se avisa en aria-live.
+  if (tokenExpirado()) {
+    cerrarSesionLocal();
+    carritoCtrl.alCerrarSesion();
+    toast('Tu sesión había vencido. Inicia sesión de nuevo.', 'info', 6000);
+  }
 
   // Sesión guardada: revalidar contra la API (/auth/me)
   let usuario = null;
-  const sesion = sesionGuardada();
-  if (sesion) {
+  const sesionActual = sesionGuardada();
+  if (sesionActual) {
     try {
       usuario = await usuarioActual();
     } catch (err) {
       if (err?.esRed) {
-        // API caída al revalidar: NO se cierra la sesión (no es un 401); se
-        // conserva la sesión local y las siguientes acciones reintentarán.
-        usuario = sesion.usuario ?? null;
+        // API caída al revalidar: NO se cierra la sesión (no es un 401).
+        usuario = sesionActual.usuario ?? null;
       } else {
-        // 401 real: la sesión expiró; apiClient ya la limpió y avisó al usuario.
-        cerrarSesionLocal();
+        // 401 real: apiClient ya limpió el token y avisó al usuario.
+        carritoCtrl.alCerrarSesion();
       }
     }
   }
   actualizarHeader(usuario);
+
+  // Configuración pública (IVA/envío) con fallback a config.js
+  await cargarConfiguracionPublica();
+  carritoCtrl.refrescarCarrito();
 
   // Cargar catálogo desde la API y sincronizar carrito/favoritos con stock real
   await catalogo.cargarCatalogo();

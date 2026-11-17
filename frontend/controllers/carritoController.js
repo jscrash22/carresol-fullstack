@@ -6,13 +6,15 @@ import { api, leerSesion } from '../models/apiClient.js';
 import { abrirModal, cerrarModal, toast } from '../views/uiComponents.js';
 import * as vista from '../views/carritoView.js';
 import * as vistaDetalle from '../views/productoDetalleView.js';
-import { IVA } from '../config.js';
+import { configActual } from '../models/configModel.js';
+import { limpiarBorradores } from '../models/almacenamiento.js';
+import { getProductos, datosAntiguos, invalidarCatalogo } from './catalogoController.js';
 import { pedirVolverAlCheckout } from './authController.js';
 
 const $ = (sel) => document.querySelector(sel);
 
 export function inicializar() {
-  carrito.inicializarCarrito();
+  const avisos = carrito.inicializarCarrito();
   favoritos.inicializarFavoritos();
   refrescarCarrito();
   inicializarPanelCarrito();
@@ -21,6 +23,17 @@ export function inicializar() {
   document.addEventListener('carresol:abrir-carrito', abrirCarrito);
   // El checkout vacía el carrito tras confirmar un pedido
   document.addEventListener('carresol:carrito-cambio', refrescarCarrito);
+  // El catálogo se recarga en segundo plano → revalidar carrito con stock real
+  window.addEventListener('carresol:catalogo-actualizado', () => {
+    sincronizarConCatalogo(getProductos(), { avisar: false });
+  });
+  // Otra pestaña cambió el carrito/favoritos: reflejarlo aquí (§4.1)
+  carrito.escucharCambiosDeCarrito(() => {
+    refrescarCarrito();
+    toast('Carrito actualizado desde otra pestaña.', 'info', 2500);
+  });
+  favoritos.escucharCambios(() => refrescarFavoritos());
+  return avisos;
 }
 
 // ---------- Carrito ----------
@@ -36,7 +49,7 @@ export function refrescarCarrito() {
     },
   });
   $('#carrito-vacio').hidden = items.length > 0;
-  vista.actualizarTotales(carrito.calcularTotales(IVA));
+  vista.actualizarTotales(carrito.calcularTotales(configActual().iva));
   vista.mostrarFechaActualizacion(carrito.getUltimaActualizacion());
 }
 
@@ -65,30 +78,66 @@ export function abrirDetalleProducto(producto) {
 }
 
 // Al cargar el catálogo: revalida precios/stock por variante y avisa (§7)
-export function sincronizarConCatalogo(productosApi) {
+export function sincronizarConCatalogo(productosApi, { avisar = true } = {}) {
   const { avisos } = carrito.sincronizarConCatalogo(productosApi);
   refrescarCarrito();
-  avisos.slice(0, 3).forEach((a) => toast(a, 'info', 5000));
-  if (avisos.length > 3) toast(`Y ${avisos.length - 3} avisos más sobre tu carrito.`, 'info', 5000);
+  if (avisar) {
+    avisos.slice(0, 3).forEach((a) => toast(a, 'info', 5000));
+    if (avisos.length > 3) toast(`Y ${avisos.length - 3} avisos más sobre tu carrito.`, 'info', 5000);
+  }
+  return avisos;
 }
 
-// Al INICIAR SESIÓN (§7): sube el carrito local (PUT /api/carrito), adopta la
-// respuesta del servidor y liga los favoritos a la cuenta.
+// Al INICIAR SESIÓN (§4.1): el destino de los datos locales depende del DUEÑO.
+//  • dueño `invitado` → fusión con el carrito del servidor (PUT) y subida de favoritos.
+//  • dueño otro usuario → DESCARTAR lo local (nunca fusionar) y cargar lo del servidor.
+//  • dueño este usuario → conservar el espejo y recargar del servidor.
 export async function sincronizarTrasLogin(productosCatalogo = []) {
-  if (carrito.getCarrito().length) {
-    try {
-      const servidor = await api.put('/carrito', { items: carrito.itemsParaServidor() });
-      carrito.adoptarCarritoServidor(servidor, productosCatalogo);
-    } catch { /* sin conexión: el carrito local sigue funcionando */ }
+  const id = String(leerSesion()?.usuario?.id ?? '');
+  const duenoAnterior = carrito.getDueno();
+  const esInvitado = duenoAnterior === 'invitado';
+  const esOtro = !esInvitado && duenoAnterior !== id;
+
+  if (esOtro) {
+    carrito.vaciarPorCierreDeSesion();
+    favoritos.descartarPorCierreDeSesion();
   }
+
+  try {
+    if (esInvitado && carrito.getCarrito().length) {
+      const servidor = await api.put('/carrito', { items: carrito.itemsParaServidor() });
+      carrito.adoptarCarritoServidor(servidor, productosCatalogo, id);
+    } else if (!esInvitado) {
+      const servidor = await api.get('/carrito');
+      carrito.adoptarCarritoServidor(servidor, productosCatalogo, id);
+    }
+  } catch { /* sin conexión: se mantiene el espejo local del usuario */ }
+
+  carrito.setDueno(id);
+  favoritos.setDueno(id);
+
+  if (esInvitado) await favoritos.ligarAServidor();
+  else if (esOtro) await favoritos.adoptarDelServidor();
+
   refrescarCarrito();
-  await favoritos.ligarAServidor();
   refrescarFavoritos();
 }
 
-// Al CERRAR sesión: los favoritos vuelven al modo local (espejo en localStorage)
-export function alCerrarSesion() {
+// Al CERRAR sesión (manual o por 401): si el dueño era un usuario, se vacía el
+// carrito local, el espejo de favoritos y los borradores. Nunca se toca el
+// carrito guardado en el servidor, que sigue siendo de ese usuario.
+export function alCerrarSesion({ conservarDatos = false } = {}) {
+  if (!conservarDatos) {
+    if (carrito.getDueno() !== 'invitado') {
+      carrito.vaciarPorCierreDeSesion();
+      favoritos.descartarPorCierreDeSesion();
+    }
+    limpiarBorradores();
+  }
+  // Si la sesión caduca DURANTE el checkout se conservan carrito y borradores
+  // para reanudarlos tras el login (§4.1.4).
   favoritos.volverAModoLocal();
+  refrescarCarrito();
   refrescarFavoritos();
 }
 
@@ -138,6 +187,10 @@ function inicializarPanelCarrito() {
 
 function abrirCarrito() {
   abrirModal($('#panel-carrito'), document.activeElement);
+  // Revalida precios/stock con el catálogo en memoria y pide frescura si está
+  // viejo (>30 s). La recarga llega por el evento carresol:catalogo-actualizado.
+  sincronizarConCatalogo(getProductos(), { avisar: true });
+  if (datosAntiguos()) invalidarCatalogo();
   refrescarCarrito();
 }
 

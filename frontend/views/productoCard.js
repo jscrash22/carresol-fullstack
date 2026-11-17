@@ -4,6 +4,8 @@
 // variante se hace desde el detalle ("Ver detalle").
 import { rangoPrecios } from '../models/productoModel.js';
 import { esFavorito } from '../models/favoritosModel.js';
+import { urlImagenPrincipal, altImagenPrincipal } from '../models/carritoModel.js';
+import { etiquetaStock } from '../models/stockModel.js';
 
 export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFavoritos = false } = {}) {
   const card = document.createElement('article');
@@ -12,8 +14,8 @@ export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFav
 
   // Imagen con alt descriptivo y fallback de error
   const img = document.createElement('img');
-  img.src = producto.imagen || '';
-  img.alt = producto.alt || producto.nombre;
+  img.src = urlImagenPrincipal(producto) || '';
+  img.alt = altImagenPrincipal(producto) || producto.nombre;
   img.loading = 'lazy';
   img.addEventListener('error', () => {
     img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400"><rect width="500" height="400" fill="%23d4af37"/><text x="50%" y="50%" fill="white" font-size="24" text-anchor="middle">Carresol</text></svg>';
@@ -44,13 +46,10 @@ export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFav
   precio.textContent = rangoPrecios(producto);
 
   const stock = document.createElement('p');
-  stock.className = 'stock';
-  const agotado = !producto.stock || producto.stock <= 0;
+  const estadoStock = etiquetaStock(producto.stock, 5);
+  stock.className = `stock ${estadoStock.clase}`.trim();
   const nVariantes = (producto.variantes ?? []).length;
-  stock.textContent = agotado
-    ? 'Agotado'
-    : `Stock: ${producto.stock}${nVariantes > 1 ? ` · ${nVariantes} variantes` : ''}`;
-  stock.classList.toggle('agotado', agotado);
+  stock.textContent = estadoStock.texto + (nVariantes > 1 ? ` · ${nVariantes} variantes` : '');
 
   const acciones = document.createElement('div');
   acciones.className = 'acciones';
@@ -59,7 +58,7 @@ export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFav
   btnVer.className = 'btn btn-dorado';
   btnVer.textContent = 'Ver detalle';
   btnVer.setAttribute('aria-label', `Ver detalle de ${producto.nombre}`);
-  btnVer.disabled = agotado && !nVariantes; // sin variantes visibles no hay nada que elegir
+  btnVer.disabled = estadoStock.agotado && !nVariantes; // sin variantes visibles no hay nada que elegir
   btnVer.addEventListener('click', () => onVerDetalle?.(producto));
   acciones.appendChild(btnVer);
 

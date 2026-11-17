@@ -1,35 +1,46 @@
 // apiClient.js — fetch centralizado: token, parseo consistente y errores tipificados
 // Tipos de error manejados: red caída, 401 (sesión vencida), 403, 404, 422, 500 y otros.
 import { API_BASE_URL } from '../config.js';
-
-const CLAVE_TOKEN = 'carresol_token';
-const CLAVE_USUARIO = 'carresol_usuario';
+import { sesion, CLAVES } from './almacenamiento.js';
 
 // ---- Sesión (token en sessionStorage; decisión y riesgo documentados en el README) ----
+// Todo el acceso a almacenamiento pasa por almacenamiento.js (§4.1).
 export function guardarSesion(token, usuario) {
-  try {
-    sessionStorage.setItem(CLAVE_TOKEN, token);
-    sessionStorage.setItem(CLAVE_USUARIO, JSON.stringify(usuario));
-  } catch (e) { console.error('No se pudo guardar la sesión:', e); }
+  sesion.set(CLAVES.TOKEN, token);
+  sesion.set(CLAVES.USUARIO, usuario ?? null);
 }
 
 export function leerSesion() {
-  try {
-    const token = sessionStorage.getItem(CLAVE_TOKEN);
-    const usuario = JSON.parse(sessionStorage.getItem(CLAVE_USUARIO) || 'null');
-    return token ? { token, usuario } : null;
-  } catch (e) { return null; }
+  const token = sesion.get(CLAVES.TOKEN);
+  if (!token || typeof token !== 'string') return null;
+  const usuario = sesion.json(CLAVES.USUARIO, null);
+  return { token, usuario };
 }
 
 export function borrarSesion() {
-  try {
-    sessionStorage.removeItem(CLAVE_TOKEN);
-    sessionStorage.removeItem(CLAVE_USUARIO);
-  } catch (e) { /* nada */ }
+  sesion.remove(CLAVES.TOKEN);
+  sesion.remove(CLAVES.USUARIO);
 }
 
 export function getToken() {
-  return sessionStorage.getItem(CLAVE_TOKEN);
+  const token = sesion.get(CLAVES.TOKEN);
+  return typeof token === 'string' ? token : null;
+}
+
+// Comprueba el claim `exp` del JWT ANTES de llamar a la API. Así una pestaña
+// nueva con un token vencido no provoca peticiones inútiles ni errores confusos.
+export function tokenExpirado(token = getToken()) {
+  if (!token || typeof token !== 'string') return false;
+  try {
+    const parte = token.split('.')[1];
+    if (!parte) return false;
+    const base64 = parte.replace(/-/g, '+').replace(/_/g, '/');
+    const relleno = '='.repeat((4 - (base64.length % 4)) % 4);
+    const payload = JSON.parse(globalThis.atob(base64 + relleno));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 <= Date.now() : false;
+  } catch {
+    return false; // token opaco: se deja validar al servidor
+  }
 }
 
 // ---- Errores tipificados para que la UI siempre muestre un mensaje claro ----

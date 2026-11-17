@@ -4,10 +4,12 @@
 import * as admin from '../models/adminModel.js';
 import * as vista from '../views/adminView.js';
 import { toast, confirmar } from '../views/uiComponents.js';
+import { sesion, CLAVES } from '../models/almacenamiento.js';
+import { invalidarCatalogo, getProductos } from './catalogoController.js';
 
 const $ = (sel) => document.querySelector(sel);
 
-let pestanaActiva = 'resumen';
+let pestanaActiva = sesion.get(CLAVES.PESTANA_ADMIN, 'resumen') || 'resumen';
 const filtros = {
   pedidos: 'todos',
   movimientos: { tipo: 'todos', varianteId: undefined },
@@ -27,6 +29,7 @@ export async function cargarPanel() {
 async function cargarTab(tab) {
   const vistaEl = $('#vista-admin');
   pestanaActiva = tab;
+  sesion.set(CLAVES.PESTANA_ADMIN, tab);
   vista.renderizarPestanas(vistaEl, tab, cargarTab);
   const panel = $(`#panel-${tab}`);
   if (!panel) return;
@@ -83,6 +86,7 @@ async function guardarProducto(datos, id) {
     if (id) await admin.actualizarProducto(id, datos);
     else await admin.crearProducto(datos);
     toast(id ? 'Producto actualizado.' : 'Producto creado.', 'ok');
+    invalidarCatalogo(); // precios/variantes/imágenes nuevas en el catálogo
     await recargar();
     return true;
   } catch (err) {
@@ -101,6 +105,7 @@ async function eliminarProducto(p) {
   try {
     await admin.eliminarProducto(p.id);
     toast('Producto eliminado.', 'ok');
+    invalidarCatalogo();
     await recargar();
   } catch (err) {
     toast(mensajeError(err), 'error');
@@ -160,6 +165,7 @@ async function cargarPedidos(panel) {
       onCambiarEstado: cambiarEstadoPedido,
       onConfirmarPago: confirmarPago,
       onRegistrarEnvio: (p) => vista.abrirFormularioEnvio(p, guardarEnvio),
+      productos: getProductos(),
     });
   } catch (err) {
     vista.renderizarError(panel, mensajeError(err), recargar);
@@ -171,6 +177,7 @@ async function cambiarEstadoPedido(pedido, estado) {
   try {
     await admin.cambiarEstadoPedido(pedido.id, estado);
     toast(`Pedido #${pedido.numeroPedido}: ${estado}.`, 'ok');
+    if (estado === 'cancelado') invalidarCatalogo(); // el servidor repone el stock
     await cargarTab('pedidos');
   } catch (err) {
     toast(mensajeError(err), 'error'); // transición inválida u otro error del servidor
@@ -208,9 +215,34 @@ async function guardarEnvio(pedido, datos) {
 async function cargarUsuarios(panel) {
   vista.renderizarCargando(panel, 'Cargando usuarios…');
   try {
-    vista.renderizarUsuarios(panel, await admin.listarUsuarios());
+    vista.renderizarUsuarios(panel, await admin.listarUsuarios(), {
+      onCambiar: (u) => vista.abrirFormularioUsuario(u, (datos) => guardarUsuario(u, datos)),
+    });
   } catch (err) {
     vista.renderizarError(panel, mensajeError(err), recargar);
+  }
+}
+
+async function guardarUsuario(usuario, datos) {
+  const cambios = [];
+  if (datos.role !== usuario.role) cambios.push(`rol: ${usuario.role} → ${datos.role}`);
+  if (datos.activo !== usuario.activo) cambios.push(`estado: ${usuario.activo ? 'activo' : 'inactivo'} → ${datos.activo ? 'activo' : 'inactivo'}`);
+  if (!cambios.length) return 'No se solicitó ningún cambio.';
+
+  const ok = await confirmar({
+    titulo: 'Confirmar cambio de usuario',
+    mensaje: `¿Aplicar en ${usuario.nombre} (${usuario.email}) los cambios: ${cambios.join(', ')}?`,
+    textoOk: 'Aplicar cambios',
+    peligro: datos.activo === false || datos.role !== 'admin',
+  });
+  if (!ok) return true; // cierra el modal sin cambios
+  try {
+    await admin.cambiarUsuario(usuario.id, datos);
+    toast(`Usuario ${usuario.nombre} actualizado.`, 'ok');
+    await recargar();
+    return true;
+  } catch (err) {
+    return mensajeError(err);
   }
 }
 
@@ -270,6 +302,7 @@ async function cargarCompras(panel) {
       onNueva: () => abrirFormulario(null),
       onEditar: abrirFormulario,
       onCambiarEstado: cambiarEstadoCompra,
+      productos,
     });
   } catch (err) {
     vista.renderizarError(panel, mensajeError(err), recargar);
@@ -306,6 +339,7 @@ async function cambiarEstadoCompra(compra, estado) {
     toast(estado === 'recibida'
       ? `Compra #${compra.numeroCompra} recibida: stock repuesto.`
       : `Compra #${compra.numeroCompra}: ${estado}.`, 'ok');
+    if (estado === 'recibida' || estado === 'cancelada') invalidarCatalogo();
     await cargarTab('compras');
     // La pestaña de inventario se recarga sola al volver a ella (cargarTab
     // siempre consulta de nuevo el stock bajo y el kardex).
@@ -330,6 +364,7 @@ async function cargarInventario(panel) {
         filtros.movimientos = { tipo, varianteId };
         return cargarTab('inventario');
       },
+      productos: getProductos(),
     });
   } catch (err) {
     vista.renderizarError(panel, mensajeError(err), recargar);

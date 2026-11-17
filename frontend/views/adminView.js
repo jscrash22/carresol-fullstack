@@ -5,6 +5,28 @@
 // Regla anti-XSS: todo con createElement/textContent, nunca innerHTML.
 import { abrirModal, cerrarModal, spinner } from './uiComponents.js';
 import { formatearPrecio } from '../models/productoModel.js';
+import { urlImagenPrincipal, altImagenPrincipal } from '../models/carritoModel.js';
+
+// Miniatura reutilizable para tablas administrativas. Nunca se renderiza una
+// URL sin alt; si falla la carga se sustituye por texto accesible.
+function miniatura(producto, clase = 'mini-producto') {
+  const url = urlImagenPrincipal(producto)
+    || (typeof producto?.url === 'string' ? producto.url : null);
+  if (!url) return el('span', `${clase} mini-producto--vacio`, '—');
+  const img = el('img', clase);
+  img.src = url;
+  img.alt = altImagenPrincipal(producto) || producto?.altText || `Imagen de ${producto.nombre ?? 'producto'}`;
+  img.loading = 'lazy';
+  img.addEventListener('error', () => {
+    img.replaceWith(el('span', `${clase} mini-producto--error`, 'Sin imagen'));
+  });
+  return img;
+}
+
+function productoPorId(lista, id, varianteId) {
+  return (lista ?? []).find((p) => Number(p.id) === Number(id)
+    || (varianteId !== undefined && (p.variantes ?? []).some((v) => Number(v.id) === Number(varianteId))));
+}
 
 export const PESTANAS = [
   { id: 'resumen', etiqueta: 'Resumen' },
@@ -308,6 +330,7 @@ export function renderizarProductos(panel, productos, { onNuevo, onEditar, onEli
 
   if (!productos.length) { vacio(panel, 'No hay productos.'); return; }
   const filas = productos.map((p) => filaTabla([
+    miniatura(p),
     String(p.id),
     p.nombre,
     p.categoriaNombre ?? p.categoria,
@@ -320,7 +343,9 @@ export function renderizarProductos(panel, productos, { onNuevo, onEditar, onEli
       boton('Eliminar', `Eliminar ${p.nombre}`, () => onEliminar(p), 'btn btn-mini btn-rojo'),
     ],
   ]));
-  panel.appendChild(tabla(['ID', 'Nombre', 'Categoría', 'Precio base', 'Stock total', 'Variantes', 'Estado', 'Acciones'], filas));
+  const tablaProductos = tabla(['Imagen', 'ID', 'Nombre', 'Categoría', 'Precio base', 'Stock total', 'Variantes', 'Estado', 'Acciones'], filas);
+  tablaProductos.classList.add('tabla-admin--productos');
+  panel.appendChild(tablaProductos);
 }
 
 // Editor de variantes (filas repetibles dentro del modal de producto)
@@ -421,6 +446,131 @@ function editorVariantes(contenedor, materiales, variantesIniciales) {
   };
 }
 
+// Editor de imágenes múltiples (§4.3): miniatura, URL, alt, principal y orden.
+// Mantiene `imagen`/`alt` clásicos como derivados de la imagen principal.
+function editorImagenes(contenedor, producto) {
+  const filas = [];
+  let contador = 0;
+  const iniciales = producto?.imagenes?.length
+    ? producto.imagenes.map((i) => ({ url: i.url, altText: i.altText ?? '', esPrincipal: Boolean(i.esPrincipal), orden: Number(i.orden ?? 0) }))
+    : (producto?.imagen ? [{ url: producto.imagen, altText: producto.alt ?? '', esPrincipal: true, orden: 0 }] : []);
+
+  contenedor.appendChild(el('p', 'ayuda-password',
+    'La primera imagen marcada como principal es la que aparece en el catálogo. El texto alternativo es obligatorio para accesibilidad.'));
+
+  const vistaPrevia = el('div', 'editor-imagenes__preview');
+  const img = el('img', 'editor-imagenes__img');
+  img.alt = 'Vista previa de la imagen principal';
+  const estado = el('p', 'ayuda-password', 'Sin imagen principal.');
+  estado.setAttribute('role', 'status');
+  estado.setAttribute('aria-live', 'polite');
+  vistaPrevia.append(img, estado);
+  contenedor.appendChild(vistaPrevia);
+
+  let temporizador = null;
+  function actualizarVistaPrevia() {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => {
+      const principal = valores().find((i) => i.esPrincipal) ?? valores()[0];
+      if (!principal?.url) {
+        img.removeAttribute('src');
+        estado.textContent = 'Sin imagen principal.';
+        return;
+      }
+      img.src = principal.url;
+      img.alt = principal.altText || 'Vista previa de la imagen principal';
+      estado.textContent = 'Vista previa actualizada.';
+    }, 250);
+  }
+
+  const cabecera = el('div', 'fila-imagen fila-imagen--cabecera');
+  ['Vista previa', 'URL', 'Texto alternativo', 'Principal', 'Orden', ''].forEach((t) =>
+    cabecera.appendChild(el('span', null, t)));
+  contenedor.appendChild(cabecera);
+
+  const agregarFila = (inicial = {}) => {
+    const fila = el('div', 'fila-imagen');
+    const miniaturaFila = miniatura(inicial, 'mini-producto');
+    const url = el('input');
+    url.type = 'text';
+    url.value = inicial.url ?? '';
+    url.placeholder = 'assets/img/... o https://...';
+    url.setAttribute('aria-label', 'URL de la imagen');
+    const altTexto = el('input');
+    altTexto.type = 'text';
+    altTexto.maxLength = 160;
+    altTexto.value = inicial.altText ?? '';
+    altTexto.placeholder = 'Ej: Anillo de oro con diamante';
+    altTexto.setAttribute('aria-label', 'Texto alternativo de la imagen');
+    const principal = el('input');
+    principal.type = 'radio';
+    principal.name = 'prod-imagen-principal';
+    principal.checked = Boolean(inicial.esPrincipal);
+    principal.setAttribute('aria-label', 'Usar como imagen principal');
+    const orden = el('input');
+    orden.type = 'number';
+    orden.min = '0';
+    orden.step = '1';
+    orden.value = inicial.orden ?? filas.length;
+    orden.setAttribute('aria-label', 'Orden de la imagen');
+    const btnQuitar = boton('✕', 'Quitar esta imagen', () => {
+      const i = filas.indexOf(reg);
+      if (i >= 0) filas.splice(i, 1);
+      fila.remove();
+      if (principal.checked && filas.length) filas[0].principal.checked = true;
+      actualizarVistaPrevia();
+    }, 'btn btn-mini btn-rojo');
+
+    const actualizarMiniatura = () => {
+      const nueva = miniatura({ nombre: 'imagen', imagen: url.value.trim(), imagenes: [{ url: url.value.trim(), altText: altTexto.value }] }, 'mini-producto');
+      miniaturaFila.replaceWith(nueva);
+      reg.miniatura = nueva;
+      actualizarVistaPrevia();
+    };
+    url.addEventListener('input', actualizarMiniatura);
+    principal.addEventListener('change', actualizarVistaPrevia);
+    fila.append(miniaturaFila, url, altTexto, principal, orden, btnQuitar);
+    contenedor.appendChild(fila);
+    const reg = { id: inicial.id ?? null, url, altTexto, principal, orden, fila, miniatura: miniaturaFila };
+    filas.push(reg);
+    return reg;
+  };
+
+  (iniciales ?? []).forEach(agregarFila);
+  if (!filas.length) agregarFila();
+  filas[0].principal.checked = true;
+
+  const btnAgregar = boton('+ Añadir imagen', 'Añadir otra imagen al producto', () => {
+    agregarFila({ orden: filas.length });
+    actualizarVistaPrevia();
+  });
+  contenedor.appendChild(btnAgregar);
+
+  function valores() {
+    return filas.map((f) => ({
+      url: f.url.value.trim(),
+      altText: f.altTexto.value.trim(),
+      esPrincipal: f.principal.checked,
+      orden: Number(f.orden.value) || 0,
+    }));
+  }
+
+  img.addEventListener('error', () => { estado.textContent = 'No se pudo cargar la vista previa. Revisa la URL.'; });
+  actualizarVistaPrevia();
+
+  return {
+    valores,
+    validar() {
+      const lista = valores();
+      if (!lista.length) return null;
+      if (lista.some((i) => !i.url)) return 'Toda imagen necesita una URL.';
+      if (lista.some((i) => !i.altText)) return 'Toda imagen necesita texto alternativo.';
+      if (!lista.some((i) => i.esPrincipal)) return 'Marca una imagen como principal.';
+      return null;
+    },
+  };
+}
+
 // onGuardar(datos) → Promise<boolean>
 export function abrirFormularioProducto(producto, { categorias, materiales, onGuardar }) {
   const { modal, cuerpo, error, acciones } = montarModal('modal-producto', producto ? `Editar "${producto.nombre}"` : 'Nuevo producto', true);
@@ -438,16 +588,19 @@ export function abrirFormularioProducto(producto, { categorias, materiales, onGu
     if (cat) cCategoria.input.value = String(cat.id);
   }
   const cPrecio = campo('prod-precio-base', 'Precio base (USD) *', { tipo: 'number', valor: producto?.precioBase ?? producto?.precio, requerido: true, min: 0, step: 0.01 });
-  const cImagen = campo('prod-imagen', 'Ruta de imagen', { valor: producto?.imagen, placeholder: 'assets/img/...' });
-  const cAlt = campo('prod-alt', 'Texto alternativo de imagen', { valor: producto?.alt });
   const cDestacado = campoCheck('prod-destacado', 'Producto destacado', producto?.destacado ?? false);
   const cActivo = campoCheck('prod-activo', 'Producto activo (visible en el catálogo)', producto?.activo ?? true);
 
   cuerpo.append(
     cNombre.envoltura, cDesc.envoltura, cCategoria.envoltura, cPrecio.envoltura,
-    cImagen.envoltura, cAlt.envoltura, cDestacado.envoltura, cActivo.envoltura,
-    el('h3', 'subtitulo-modal', 'Variantes (material + medida/talla)'),
+    cDestacado.envoltura, cActivo.envoltura,
+    el('h3', 'subtitulo-modal', 'Imágenes del producto'),
   );
+  const contImagenes = el('div', 'editor-imagenes');
+  cuerpo.appendChild(contImagenes);
+  const editorImgs = editorImagenes(contImagenes, producto);
+
+  cuerpo.appendChild(el('h3', 'subtitulo-modal', 'Variantes (material + medida/talla)'));
   const contVariantes = el('div', 'editor-variantes');
   cuerpo.appendChild(contVariantes);
   const editor = editorVariantes(contVariantes, materiales, producto?.variantes ?? []);
@@ -457,18 +610,24 @@ export function abrirFormularioProducto(producto, { categorias, materiales, onGu
     if (nombre.length < 3) { error.textContent = 'El nombre admite entre 3 y 120 caracteres.'; return; }
     if (!cCategoria.input.value) { error.textContent = 'Elige una categoría.'; return; }
     if (!(Number(cPrecio.input.value) >= 0)) { error.textContent = 'El precio base debe ser ≥ 0.'; return; }
+    const falloImagen = editorImgs.validar();
+    if (falloImagen) { error.textContent = falloImagen; return; }
     const falloVariante = editor.validar();
     if (falloVariante) { error.textContent = falloVariante; return; }
     if (!editor.valores().length) { error.textContent = 'Agrega al menos una variante.'; return; }
 
     error.textContent = '';
+    const imagenes = editorImgs.valores();
+    const principal = imagenes.find((i) => i.esPrincipal) ?? imagenes[0];
     const datos = {
       nombre,
       descripcion: cDesc.input.value.trim() || undefined,
       categoriaId: Number(cCategoria.input.value),
       precioBase: Number(cPrecio.input.value),
-      imagen: cImagen.input.value.trim() || undefined,
-      alt: cAlt.input.value.trim() || undefined,
+      imagenes,
+      // Compatibilidad con el formato anterior del Reto 1 / respaldo JSON.
+      imagen: principal?.url || undefined,
+      alt: principal?.altText || undefined,
       destacado: cDestacado.input.checked,
       activo: cActivo.input.checked,
       variantes: editor.valores(),
@@ -558,7 +717,7 @@ export function abrirFormularioMaterial(material, { categorias }, onGuardar) {
 }
 
 // ---------- 4. Pedidos ----------
-export function renderizarPedidos(panel, pedidos, { filtroEstado, onFiltrarEstado, onCambiarEstado, onConfirmarPago, onRegistrarEnvio }) {
+export function renderizarPedidos(panel, pedidos, { filtroEstado, onFiltrarEstado, onCambiarEstado, onConfirmarPago, onRegistrarEnvio, productos = [] }) {
   panel.textContent = '';
 
   const cab = el('div', 'cabecera-tabla');
@@ -629,10 +788,11 @@ export function renderizarPedidos(panel, pedidos, { filtroEstado, onFiltrarEstad
     const items = el('div', 'ficha-pedido');
     items.appendChild(el('h4', null, 'Items'));
     const filasItems = (p.items ?? []).map((d) => filaTabla([
+      miniatura(productoPorId(productos, d.productoId, d.varianteId), 'mini-producto'),
       `${d.nombreProducto} (${[d.material, d.medida].filter(Boolean).join(' · ')})`,
       String(d.cantidad), formatearPrecio(d.precioUnitario), formatearPrecio(d.subtotal),
     ]));
-    items.appendChild(tabla(['Producto', 'Cantidad', 'Precio unitario', 'Subtotal'], filasItems));
+    items.appendChild(tabla(['Imagen', 'Producto', 'Cantidad', 'Precio unitario', 'Subtotal'], filasItems, `Items del pedido ${p.numeroPedido}`));
     detalle.appendChild(items);
 
     const fichas = el('div', 'grid-fichas');
@@ -717,7 +877,7 @@ export function abrirFormularioEnvio(pedido, onGuardar) {
 }
 
 // ---------- 5. Usuarios ----------
-export function renderizarUsuarios(panel, usuarios) {
+export function renderizarUsuarios(panel, usuarios, { onCambiar } = {}) {
   panel.textContent = '';
   cabecera(panel, `Usuarios (${usuarios.length})`);
   const filas = usuarios.map((u) => filaTabla([
@@ -730,8 +890,28 @@ export function renderizarUsuarios(panel, usuarios) {
     u.activo ? badgeTexto('Activo') : badgeTexto('Inactivo', 'badge-inactivo'),
     fechaCorta(u.ultimoLogin),
     fechaCorta(u.createdAt),
+    [boton('Cambiar rol / estado', `Cambiar rol o estado de ${u.nombre}`, () => onCambiar?.(u))],
   ]));
-  panel.appendChild(tabla(['ID', 'Nombre', 'Email', 'Cédula', 'Rol', 'Pedidos', 'Estado', 'Último acceso', 'Creado'], filas));
+  panel.appendChild(tabla(['ID', 'Nombre', 'Email', 'Cédula', 'Rol', 'Pedidos', 'Estado', 'Último acceso', 'Creado', 'Acciones'], filas));
+}
+
+// Modal accesible para activar/desactivar y cambiar el rol de un usuario.
+// onGuardar → Promise<true | string>. El controller pide confirmación antes.
+export function abrirFormularioUsuario(usuario, onGuardar) {
+  const { modal, cuerpo, error, acciones } = montarModal('modal-usuario', 'Cambiar usuario');
+  const rol = campo('usuario-rol', 'Rol', {
+    valor: usuario.role,
+    opciones: [{ value: 'user', texto: 'Cliente' }, { value: 'admin', texto: 'Administrador' }],
+  });
+  const activo = campoCheck('usuario-activo', 'Cuenta activa (si se desactiva, su token deja de servir)', usuario.activo);
+  const aviso = el('p', 'ayuda-password',
+    'No se puede desactivar ni quitar el rol al propio administrador, ni dejar el sistema sin un administrador activo.');
+  cuerpo.append(rol.envoltura, activo.envoltura, aviso);
+  botonGuardarCancelar(acciones, modal, () => onGuardar({
+    role: rol.input.value,
+    activo: activo.input.checked,
+  }), error);
+  abrirModal(modal, document.activeElement);
 }
 
 // ---------- 6. Proveedores ----------
@@ -783,7 +963,7 @@ export function abrirFormularioProveedor(proveedor, onGuardar) {
 }
 
 // ---------- 7. Compras ----------
-export function renderizarCompras(panel, compras, { onNueva, onEditar, onCambiarEstado }) {
+export function renderizarCompras(panel, compras, { onNueva, onEditar, onCambiarEstado, productos = [] }) {
   panel.textContent = '';
   cabecera(panel, `Compras (${compras.length})`, [
     boton('+ Nueva compra', 'Registrar una compra a proveedor', onNueva, 'btn btn-dorado'),
@@ -827,10 +1007,11 @@ export function renderizarCompras(panel, compras, { onNueva, onEditar, onCambiar
     detalle.hidden = true;
 
     const filasItems = (c.items ?? []).map((i) => filaTabla([
+      miniatura(productoPorId(productos, i.productoId, i.varianteId), 'mini-producto'),
       `${i.nombreProducto} (${[i.material, i.medida].filter(Boolean).join(' · ')})`,
       i.sku ?? '—', String(i.cantidad), formatearPrecio(i.costoUnitario), formatearPrecio(i.subtotal),
     ]));
-    detalle.appendChild(tabla(['Producto', 'SKU', 'Cantidad', 'Costo unitario', 'Subtotal'], filasItems, 'Items de la compra'));
+    detalle.appendChild(tabla(['Imagen', 'Producto', 'SKU', 'Cantidad', 'Costo unitario', 'Subtotal'], filasItems, 'Items de la compra'));
     if (c.notas) detalle.appendChild(el('p', 'ayuda-password', `Notas: ${c.notas}`));
     if (c.numeroFacturaProveedor) detalle.appendChild(el('p', 'ayuda-password', `Factura del proveedor: ${c.numeroFacturaProveedor}`));
 
@@ -854,7 +1035,7 @@ export function abrirFormularioCompra(compra, { proveedores, productos }, onGuar
 
   const contItems = el('div', 'editor-variantes');
   const cabeceraItems = el('div', 'fila-variante fila-variante--cabecera');
-  ['Producto', 'Variante', 'Cantidad', 'Costo unitario', ''].forEach((t) =>
+  ['Imagen', 'Producto', 'Variante', 'Cantidad', 'Costo unitario', ''].forEach((t) =>
     cabeceraItems.appendChild(el('span', null, t)));
   contItems.appendChild(cabeceraItems);
   cuerpo.appendChild(contItems);
@@ -862,6 +1043,11 @@ export function abrirFormularioCompra(compra, { proveedores, productos }, onGuar
   const filas = [];
   const agregarFila = (item = {}) => {
     const fila = el('div', 'fila-variante fila-compra');
+    const vistaPrevia = el('img', 'mini-producto');
+    vistaPrevia.alt = 'Imagen del producto seleccionado';
+    vistaPrevia.addEventListener('error', () => {
+      vistaPrevia.replaceWith(el('span', 'mini-producto mini-producto--error', 'Sin imagen'));
+    });
     const selProducto = el('select');
     selProducto.setAttribute('aria-label', 'Producto a comprar');
     productos.forEach((p) => {
@@ -898,6 +1084,10 @@ export function abrirFormularioCompra(compra, { proveedores, productos }, onGuar
       });
       const variante = (producto?.variantes ?? []).find((v) => Number(v.id) === Number(item.varianteId));
       if (variante && costo.value === '') costo.value = String(variante.precio * 0.5);
+      const url = urlImagenPrincipal(producto);
+      if (url) vistaPrevia.src = url;
+      else vistaPrevia.removeAttribute('src');
+      vistaPrevia.alt = altImagenPrincipal(producto) || `Imagen de ${producto?.nombre ?? 'producto'}`;
     };
     selProducto.addEventListener('change', () => { item.varianteId = undefined; llenarVariantes(); });
     selProducto.value = (() => {
@@ -911,7 +1101,7 @@ export function abrirFormularioCompra(compra, { proveedores, productos }, onGuar
       fila.remove();
     }, 'btn btn-mini btn-rojo');
 
-    fila.append(selProducto, selVariante, cantidad, costo, btnQuitar);
+    fila.append(vistaPrevia, selProducto, selVariante, cantidad, costo, btnQuitar);
     contItems.appendChild(fila);
     const reg = { selProducto, selVariante, cantidad, costo, fila };
     filas.push(reg);
@@ -948,7 +1138,7 @@ export function abrirFormularioCompra(compra, { proveedores, productos }, onGuar
 }
 
 // ---------- 8. Inventario ----------
-export function renderizarInventario(panel, { stockBajo: bajo, movimientos: kardex, filtroTipo, onFiltrar }) {
+export function renderizarInventario(panel, { stockBajo: bajo, movimientos: kardex, filtroTipo, onFiltrar, productos = [] }) {
   panel.textContent = '';
 
   cabecera(panel, `Variantes en stock mínimo (${bajo.length})`);
@@ -956,10 +1146,11 @@ export function renderizarInventario(panel, { stockBajo: bajo, movimientos: kard
     vacio(panel, 'No hay variantes por debajo de su stock mínimo. ¡Inventario saludable!');
   } else {
     const filasBajo = bajo.map((v) => filaTabla([
+      miniatura(productoPorId(productos, v.productoId, v.id), 'mini-producto'),
       v.sku, v.nombreProducto, [v.material, v.medida].filter(Boolean).join(' · '),
       String(v.stock), String(v.stockMinimo), String(v.sugerido),
     ]));
-    panel.appendChild(tabla(['SKU', 'Producto', 'Variante', 'Stock', 'Mínimo', 'Sugerido'], filasBajo, 'Sugerencia de reposición (hasta 10)'));
+    panel.appendChild(tabla(['Imagen', 'SKU', 'Producto', 'Variante', 'Stock', 'Mínimo', 'Sugerido'], filasBajo, 'Sugerencia de reposición (hasta 10)'));
   }
 
   panel.appendChild(el('h3', 'subtitulo-modal', `Kardex de movimientos (${kardex.length})`));

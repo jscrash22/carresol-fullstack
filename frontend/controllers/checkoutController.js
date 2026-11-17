@@ -8,11 +8,44 @@ import { toast } from '../views/uiComponents.js';
 import * as vista from '../views/checkoutView.js';
 import { pedirVolverAlCheckout } from './authController.js';
 import { leerSesion } from '../models/apiClient.js';
+import { sesion, CLAVES } from '../models/almacenamiento.js';
+import { configActual } from '../models/configModel.js';
+import { getProductos, recargarCatalogo, invalidarCatalogo } from './catalogoController.js';
 
 const $ = (sel) => document.querySelector(sel);
 
 let refs = null;
 let formDireccion = null;
+
+// Borrador del checkout en sessionStorage. Solo opciones y texto: nunca
+// contraseñas ni datos de tarjeta (el pago es simulado).
+function guardarBorrador() {
+  if (!refs) return;
+  sesion.set(CLAVES.BORRADOR_CHECKOUT, {
+    direccionId: refs.radiosDireccion.find((r) => r.checked)?.value ?? null,
+    metodoPago: refs.radiosPago.find((r) => r.checked)?.value ?? 'tarjeta',
+    tipoIdentificacion: refs.radiosFacturacion.find((r) => r.checked)?.value ?? 'consumidor_final',
+    identificacion: refs.inputIdentificacion?.value ?? '',
+    razonSocial: refs.inputRazonSocial?.value ?? '',
+    notas: refs.textareaNotas?.value ?? '',
+  });
+  sesion.set(CLAVES.PASO_CHECKOUT, 'confirmacion');
+}
+
+function aplicarBorrador() {
+  const borrador = sesion.json(CLAVES.BORRADOR_CHECKOUT, null);
+  if (!borrador || !refs) return;
+  const marcar = (lista, valor) => {
+    const opcion = (lista ?? []).find((r) => r.value === valor);
+    if (opcion) opcion.checked = true;
+  };
+  marcar(refs.radiosDireccion, borrador.direccionId);
+  marcar(refs.radiosPago, borrador.metodoPago);
+  marcar(refs.radiosFacturacion, borrador.tipoIdentificacion);
+  if (refs.inputIdentificacion) refs.inputIdentificacion.value = borrador.identificacion ?? '';
+  if (refs.inputRazonSocial) refs.inputRazonSocial.value = borrador.razonSocial ?? '';
+  if (refs.textareaNotas) refs.textareaNotas.value = borrador.notas ?? '';
+}
 
 export async function cargarCheckout() {
   const contenedor = $('#checkout-contenido');
@@ -45,7 +78,7 @@ export async function cargarCheckout() {
   refs = vista.construirCheckout(contenedor, {
     direcciones,
     items,
-    totales: carrito.calcularTotales(),
+    totales: carrito.calcularTotales(configActual().iva),
     onAgregarNueva: () => {
       if (!formDireccion) {
         formDireccion = vista.pintarFormularioDireccion(refs.cajaNuevaDireccion);
@@ -64,6 +97,9 @@ export async function cargarCheckout() {
     formDireccion = vista.pintarFormularioDireccion(refs.cajaNuevaDireccion);
   }
 
+  aplicarBorrador();
+  refs.formulario.addEventListener('change', guardarBorrador);
+  refs.formulario.addEventListener('input', guardarBorrador);
   refs.formulario.addEventListener('submit', alConfirmar);
 }
 
@@ -154,7 +190,12 @@ async function alConfirmar(e) {
       ...(Object.keys(facturacion).length ? { facturacion } : {}),
     });
     carrito.vaciarCarrito();
+    sesion.remove(CLAVES.BORRADOR_CHECKOUT);
+    sesion.remove(CLAVES.PASO_CHECKOUT);
     document.dispatchEvent(new CustomEvent('carresol:carrito-cambio'));
+    // El pedido descuenta stock: invalidar para que tarjetas/detalle y admin
+    // muestren las cifras reales sin recargar la página (§4.2).
+    invalidarCatalogo();
     $('#checkout-contenido').hidden = true;
     vista.renderizarExito($('#checkout-exito'), pedido);
     toast(`Pedido n.º ${pedido.numeroPedido} confirmado. ¡Gracias por tu compra!`, 'ok', 6000);
@@ -163,8 +204,15 @@ async function alConfirmar(e) {
       ? 'No se pudo conectar con el servidor. Intenta de nuevo.'
       : (err.message || 'No se pudo registrar el pedido.');
     toast(aviso.textContent, 'error', 6000);
-    // El carrito queda intacto para reintentar; si el stock cambió, la vista
-    // de pedidos del catálogo lo revalidará al recargar.
+    guardarBorrador(); // se conserva para reintentar tras un 401/red caída
+    // Fallo por stock: recargar catálogo y ajustar carrito a las unidades reales.
+    const porStock = /stock|unidades|inventario/i.test(err.message || '');
+    if (porStock) {
+      await recargarCatalogo({ silencioso: true });
+      const cambios = carrito.sincronizarConCatalogo(getProductos());
+      document.dispatchEvent(new CustomEvent('carresol:carrito-cambio'));
+      cambios.avisos.slice(0, 3).forEach((a) => toast(a, 'info', 6000));
+    }
   } finally {
     refs.btnConfirmar.disabled = false;
     refs.btnConfirmar.textContent = 'Confirmar pedido';
