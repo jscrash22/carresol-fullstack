@@ -279,3 +279,31 @@ Cada fase agrega sus decisiones al final de este archivo.
   movido a `dependencies`, `HTTPS=false`, CORS whitelist ya existente.
 - **Zip:** `Reto2_Carresol.zip`, regenerado sin `.env`, `node_modules`, `.git`, `.db` ni
   secretos.
+
+---
+
+## FASE 13 — SUPER PROMPT: red de seguridad y línea base
+
+- **Entrega:** se usa el default `Reto2_Carresol.zip` (el estudiante confirmó "usa el default").
+- **Git:** `git status` limpio; tag `antes-del-super-prompt` en `908bc82`; rama de trabajo
+  `mejoras-finales`. El propio super prompt se archivó en `docs/prompts/`.
+- **Entorno:** Node **v24.21.0** (major LTS local → `.node-version` = 24), npm 11.19.0.
+  `npm` necesita `npm.cmd`; `npx prisma generate` funciona tras `npm.cmd install`.
+- **Línea base (números reales de las evidencias archivadas):** smoke test **81 PASS / 0 FAIL**
+  (`smoke-test-local.txt`), E2E **37 PASS / 0 FAIL** (`e2e-frontend.txt`), accesibilidad
+  **31 PASS / 0 FAIL** (`accesibilidad.txt`). Coinciden con el estado declarado en el prompt.
+- **Diferencia documentada (§2.2):** NO se re-ejecutaron los tests de escritura contra
+  Supabase. Desde esta red los dos poolers (`6543` y `5432`) dan **timeout TCP**, así que no
+  hay conexión Prisma local; y lanzar el smoke/E2E contra la API pública habría descontado
+  stock real y creado pedidos con datos no identificables, lo cual está prohibido por §2.4.
+  Verificación real sí ejecutada en línea, solo lectura: `/api/health` 200,
+  `/api/productos` 25, login admin y listados admin 200.
+- **Respaldos:** creado `server/scripts/respaldo-json.js` (vuelca 27 tablas a
+  `server/backups/AAAA-MM-DD_HHmm/*.json`, imprime solo nombres de tabla y conteos, nunca
+  valores). La ejecución quedó bloqueada por el timeout de red; el directorio de respaldos
+  está en `.gitignore` y se excluirá del zip. Ver `BLOQUEOS.md` → B08.
+- **Protección de datos reales (§2.4), conteo del 2026-11-17:** 25 productos, 40 variantes
+  activas, stock total 710, **3 usuarios (1 NO es del seed)** y 2 pedidos. Existe al menos un
+  usuario real → **prohibido** `db:reset` / `db:seed` destructivo y cualquier prueba sobre el
+  stock de los 25 productos. Las pruebas nuevas crearán productos/variantes propios con
+  prefijo `TEST-` vía API y limpiarán solo lo creado por ellas.

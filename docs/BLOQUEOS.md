@@ -78,3 +78,18 @@ aplicado y qué debe hacer el estudiante a mano. Se actualiza por fase.
   login admin, `GET /api/health`) y, si el smoke ensucia datos, `db:reset` + `db:seed` para
   dejar la base limpia. El smoke completo (81 PASS) ya está documentado en
   `docs/evidencias/smoke-test.txt` de la FASE 11.
+
+## B08 — Poolers de Supabase inalcanzables desde esta red (FASE 13)
+
+- **Qué pasó:** `DATABASE_URL` (6543) y `DIRECT_URL` (5432) ambos dan **timeout TCP** desde
+  la máquina; Prisma responde `PrismaClientInitializationError` de red. En cambio la API en
+  Render (`https://carresol-api.onrender.com/api/health` y `/api/productos`) responde 200 y
+  ve 25 productos, así que el proyecto de Supabase NO está pausado: es el egress local a esos
+  puertos el que está bloqueado.
+- **Plan B aplicado:** (1) no ejecutar `db:reset`/`db:seed` ni migraciones contra Supabase;
+  (2) línea base tomada de las evidencias archivadas (81/37/31) + verificación en línea de
+  solo lectura; (3) las pruebas nuevas se harán contra la API pública con datos propios
+  identificables (`TEST-`) y limpieza posterior; (4) `respaldo-json.js` queda listo para
+  ejecutarse cuando el estudiante tenga red con acceso a los poolers.
+- **Cómo reintentar el respaldo:** desde `server/`, `node scripts/respaldo-json.js` (nunca
+  versionar `server/backups/`; nunca imprimir el contenido).

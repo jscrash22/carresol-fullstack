@@ -13,6 +13,9 @@ render-variables-SECRETO.md
 server/prisma/*.db
 server/prisma/*.db-journal
 
+# Respaldos de BD (datos reales: jamás versionar ni incluir en el zip)
+server/backups/
+
 # Entregables
 *.zip
 
