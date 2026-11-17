@@ -39,6 +39,16 @@ export function validar(reglas) {
 const esId = (valor) => Number.isInteger(Number(valor)) && Number(valor) > 0;
 const slugValido = (v) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(v));
 
+// URL de imagen permitida: ruta relativa bajo assets/img/ o URL https://.
+// Rechaza javascript:, data:, http: (inseguro), protocol-relative // y cualquier
+// '../' (path traversal). Longitud máxima 300, igual que el campo legacy `imagen`.
+export function urlImagenValida(valor) {
+  const url = String(valor ?? '').trim();
+  if (!url || url.length > 300 || url.includes('..')) return false;
+  if (/^(javascript|data|http):/i.test(url)) return false;
+  return url.startsWith('assets/img/') || /^https:\/\//i.test(url);
+}
+
 // Cédula ecuatoriana válida (módulo 10, provincia 1-24, tercer dígito < 6)
 export function cedulaValida(valor) {
   if (!/^\d{10}$/.test(valor)) return false;
@@ -105,6 +115,15 @@ export const validarIdCompra = validar([param('id').custom(esId).withMessage('El
 export const validarIdProveedor = validar([param('id').custom(esId).withMessage('El id debe ser un entero positivo.')]);
 export const validarIdDireccion = validar([param('id').custom(esId).withMessage('El id debe ser un entero positivo.')]);
 export const validarIdMensaje = validar([param('id').custom(esId).withMessage('El id debe ser un entero positivo.')]);
+
+// PATCH /api/admin/usuarios/:id — activo y/o role, con validación estricta
+export const validarCambioUsuario = validar([
+  param('id').custom(esId).withMessage('El id debe ser un entero positivo.'),
+  body('activo').optional().isBoolean().withMessage('activo debe ser booleano.'),
+  body('role').optional().isIn(['admin', 'user']).withMessage('role debe ser admin o user.'),
+  body().custom((b) => b.activo !== undefined || b.role !== undefined)
+    .withMessage('Envía activo o role para actualizar.'),
+]);
 export const validarIdVariante = validar([
   param('varianteId').custom(esId).withMessage('El id de variante debe ser un entero positivo.'),
 ]);
@@ -137,8 +156,26 @@ const reglasProducto = () => [
     .optional({ values: 'falsy' }).isFloat({ min: 0 }).withMessage('precio debe ser un número ≥ 0.'),
   body('stock').optional({ values: 'falsy' }).isInt({ min: 0 }).withMessage('stock debe ser entero ≥ 0.'),
   body('imagen').optional({ values: 'falsy' }).trim()
-    .isLength({ max: 300 }).withMessage('La URL de imagen admite 300 caracteres.'),
+    .isLength({ max: 300 }).withMessage('La URL de imagen admite 300 caracteres.')
+    .custom(urlImagenValida)
+    .withMessage('La imagen debe ser una ruta assets/img/... o una URL https:// (sin javascript:, data:, http: ni ..).'),
   body('alt').optional({ values: 'falsy' }).trim().escape().isLength({ max: 160 }).withMessage('alt admite 160 caracteres.'),
+  // Conjunto de imágenes (aditivo; los campos `imagen`/`alt` siguen funcionando)
+  body('imagenes').optional({ values: 'falsy' }).isArray({ min: 1, max: 20 })
+    .withMessage('imagenes debe ser un arreglo de 1 a 20 imágenes.'),
+  body('imagenes.*.url').trim().custom(urlImagenValida)
+    .withMessage('Cada URL debe empezar por assets/img/ o https:// y no contener .., javascript:, data: ni http:.'),
+  body('imagenes.*.altText').trim().escape().isLength({ min: 1, max: 300 })
+    .withMessage('Cada imagen necesita altText de 1 a 300 caracteres.'),
+  body('imagenes.*.materialId').optional({ values: 'falsy' }).custom(esId)
+    .withMessage('materialId debe ser un id entero positivo.'),
+  body('imagenes.*.orden').optional({ values: 'falsy' }).isInt({ min: 0, max: 100 })
+    .withMessage('orden debe ser un entero entre 0 y 100.'),
+  body('imagenes.*.esPrincipal').optional().isBoolean()
+    .withMessage('esPrincipal debe ser booleano.'),
+  body('imagenes').optional({ values: 'falsy' })
+    .custom((arr) => arr.filter((i) => i.esPrincipal === true).length <= 1)
+    .withMessage('Como máximo una imagen puede ser principal.'),
   body('destacado').optional().isBoolean().withMessage('destacado debe ser booleano.'),
   body('activo').optional().isBoolean().withMessage('activo debe ser booleano.'),
   body('materiales')
@@ -156,7 +193,7 @@ const reglasProducto = () => [
 ];
 
 const CAMPOS_PRODUCTO = ['nombre', 'descripcion', 'categoria', 'categoriaId', 'precioBase', 'precio', 'stock',
-  'imagen', 'alt', 'destacado', 'activo', 'materiales', 'variantes'];
+  'imagen', 'alt', 'imagenes', 'destacado', 'activo', 'materiales', 'variantes'];
 
 // POST: nombre, categoría y precio son obligatorios (el resto opcional)
 export const validarProducto = validar([

@@ -262,7 +262,24 @@ async function sembrarParametros() {
 }
 
 // ---------- Ejecución ----------
+// El seed NUNCA usa contraseñas por defecto: si faltan o son cortas, aborta
+// antes de escribir nada. Los nombres de las variables son seguros de imprimir;
+// sus VALUES jamás aparecen en consola, logs ni reportes.
+function validarSecretosSeed() {
+  const requeridas = ['SEED_ADMIN_EMAIL', 'SEED_ADMIN_PASSWORD', 'SEED_USER_EMAIL', 'SEED_USER_PASSWORD'];
+  const faltan = requeridas.filter((clave) => !process.env[clave] || !String(process.env[clave]).trim());
+  if (faltan.length) {
+    throw new Error(`Faltan variables de seed en server/.env: ${faltan.join(', ')}. El seed no tiene contraseñas por defecto.`);
+  }
+  const cortas = ['SEED_ADMIN_PASSWORD', 'SEED_USER_PASSWORD']
+    .filter((clave) => String(process.env[clave]).length < 10);
+  if (cortas.length) {
+    throw new Error(`Las contraseñas de seed deben tener al menos 10 caracteres: ${cortas.join(', ')}.`);
+  }
+}
+
 async function main() {
+  validarSecretosSeed();
   const roles = await sembrarRoles();
   console.log(`✓ Roles sembrados (admin id ${roles.admin.id}, user id ${roles.user.id})`);
 

@@ -3,8 +3,53 @@
 // Contrato de compatibilidad (prompt §6, P0): GET /api/productos sigue devolviendo
 // `precio`, `stock`, `categoria`, `imagen` y `alt` por producto (calculados a partir
 // de las variantes activas), más los arreglos `variantes`, `materiales` e `imagenes`.
-import { prisma } from './db.js';
+import { prisma, contextoAuditoria } from './db.js';
 import { ApiError, CODIGOS } from '../utils/respuestas.js';
+import { TX_LARGA } from '../utils/transaccion.js';
+
+const transaccionLarga = (fn) => prisma.$transaction(fn, TX_LARGA);
+
+// ---------- Imágenes múltiples (aditivo; `imagen`/`alt` siguen vigentes) ----------
+// Normaliza el conjunto recibido: exactamente una principal (si no se indicó,
+// se toma la primera), orden estable y altText obligatorio ya validado en la capa
+// de validación. Las URL se validan en validators.js (assets/img/ o https://).
+function imagenesNormalizadas(body) {
+  if (!Array.isArray(body.imagenes) || !body.imagenes.length) return null;
+  const lista = body.imagenes.map((img, indice) => ({
+    url: String(img.url).trim(),
+    altText: String(img.altText).trim(),
+    materialId: img.materialId ? BigInt(img.materialId) : null,
+    orden: Number.isInteger(img.orden) ? img.orden : indice,
+    esPrincipal: img.esPrincipal === true,
+  }));
+  if (!lista.some((img) => img.esPrincipal)) lista[0].esPrincipal = true;
+  return lista;
+}
+
+// Reemplaza TODO el conjunto dentro de la misma transacción y deja auditoría.
+async function reemplazarImagenes(tx, productoId, imagenes) {
+  const anteriores = await tx.productoImagen.findMany({ where: { productoId } });
+  await tx.productoImagen.deleteMany({ where: { productoId } });
+  for (const img of imagenes) {
+    await tx.productoImagen.create({ data: { productoId, ...img } });
+  }
+  await tx.auditoria.create({
+    data: {
+      tabla: 'producto_imagenes',
+      registroId: String(productoId),
+      accion: 'UPDATE',
+      datosAnteriores: anteriores.map((i) => ({
+        id: Number(i.id), url: i.url, altText: i.altText,
+        orden: i.orden, esPrincipal: i.esPrincipal,
+      })),
+      datosNuevos: imagenes.map((i) => ({
+        url: i.url, altText: i.altText, orden: i.orden,
+        esPrincipal: i.esPrincipal, materialId: i.materialId ? Number(i.materialId) : null,
+      })),
+      usuarioId: contextoAuditoria.getStore()?.usuarioId ?? null,
+    },
+  });
+}
 
 // Include completo de un producto (exportado para reutilizarlo en favoritos, etc.)
 export const INCLUIR_COMPLETO = {
@@ -153,7 +198,7 @@ export async function crearProducto(body) {
     ? body.variantes
     : null;
 
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const producto = await tx.producto.create({
       data: {
         nombre: body.nombre,
@@ -212,8 +257,11 @@ export async function crearProducto(body) {
       });
     }
 
-    // Imagen principal
-    if (body.imagen || body.alt) {
+    // Imagen principal: conjunto nuevo si llegó `imagenes`, si no compat clásica
+    const imagenes = imagenesNormalizadas(body);
+    if (imagenes) {
+      await reemplazarImagenes(tx, producto.id, imagenes);
+    } else if (body.imagen || body.alt) {
       await tx.productoImagen.create({
         data: {
           productoId: producto.id,
@@ -235,7 +283,7 @@ export async function actualizarProducto(id, body) {
   const existente = await prisma.producto.findUnique({ where: { id: idProducto } });
   if (!existente) return null;
 
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const datos = {};
     for (const clave of ['nombre', 'descripcion', 'precioBase', 'destacado', 'activo']) {
       if (body[clave] !== undefined) datos[clave] = body[clave];
@@ -253,8 +301,12 @@ export async function actualizarProducto(id, body) {
       await tx.producto.update({ where: { id: idProducto }, data: datos });
     }
 
-    // Imagen principal (solo si cambia y existe la anterior)
-    if (body.imagen !== undefined || body.alt !== undefined) {
+    // Imágenes: reemplazo atómico del conjunto si llegó `imagenes`; si no,
+    // se mantiene la compatibilidad de los campos clásicos `imagen`/`alt`.
+    const imagenes = imagenesNormalizadas(body);
+    if (imagenes) {
+      await reemplazarImagenes(tx, idProducto, imagenes);
+    } else if (body.imagen !== undefined || body.alt !== undefined) {
       const img = await tx.productoImagen.findFirst({ where: { productoId: idProducto, esPrincipal: true } });
       if (img) {
         await tx.productoImagen.update({

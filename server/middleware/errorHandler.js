@@ -36,13 +36,31 @@ export function noEncontrado(req, res) {
   });
 }
 
+// Errores de infraestructura que deben dar una respuesta consistente y sin stacktrace.
+function desdeInfraestructura(error) {
+  // express.json() lanza un error con status 413 cuando el body excede el límite.
+  if (error?.type === 'entity.too.large' || error?.status === 413 || error?.statusCode === 413) {
+    return new ApiError(CODIGOS.LIMITE_BODY,
+      'La solicitud es demasiado grande. Reduce el número de ítems, variantes o imágenes.');
+  }
+  const mensaje = String(error?.message || '');
+  // Transacciones interactivas de Prisma con arranque en frío / latencia alta.
+  if (error?.code === 'P2034'
+    || /Transaction (already closed|timed out)|transaction.*timed out|max wait duration exceeded/i.test(mensaje)) {
+    return new ApiError(CODIGOS.NO_DISPONIBLE,
+      'La base de datos no pudo completar la operación a tiempo. Inténtalo de nuevo en unos segundos.');
+  }
+  return null;
+}
+
 // eslint-disable-next-line no-unused-vars
 export function errorHandler(error, req, res, next) {
-  let err = error instanceof ApiError ? error : desdePrisma(error);
+  let err = error instanceof ApiError ? error : (desdeInfraestructura(error) || desdePrisma(error));
 
   if (!err) {
-    // Error no controlado: se registra el detalle completo, pero nunca se expone al cliente
-    logger.error(`Error interno en ${req.method} ${req.originalUrl}`, error);
+    // Error no controlado: se registra solo el mensaje (nunca stacktrace ni
+    // valores sensibles) y NUNCA se expone al cliente.
+    logger.error(`Error interno en ${req.method} ${req.originalUrl}: ${String(error?.message || 'desconocido').split('\n')[0]}`);
     err = new ApiError(CODIGOS.INTERNO, 'Error interno del servidor. Intenta de nuevo más tarde.');
   } else {
     logger.warn(`${req.method} ${req.originalUrl} → ${err.status} ${err.codigo}: ${err.message}`);

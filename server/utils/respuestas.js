@@ -18,7 +18,9 @@ export const CODIGOS = {
   CONFLICTO: { status: 409, codigo: 'CONFLICTO' },
   REGLA_NEGOCIO: { status: 409, codigo: 'REGLA_NEGOCIO' },
   LIMITE: { status: 429, codigo: 'LIMITE' },
+  LIMITE_BODY: { status: 413, codigo: 'LIMITE_BODY' },
   INTERNO: { status: 500, codigo: 'INTERNO' },
+  NO_DISPONIBLE: { status: 503, codigo: 'NO_DISPONIBLE' },
 };
 
 export class ApiError extends Error {

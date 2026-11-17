@@ -9,7 +9,10 @@
 import { prisma } from './db.js';
 import { Prisma } from '@prisma/client';
 import { ApiError, CODIGOS } from '../utils/respuestas.js';
+import { TX_LARGA } from '../utils/transaccion.js';
 import crypto from 'node:crypto';
+
+const transaccionLarga = (fn) => prisma.$transaction(fn, TX_LARGA);
 
 const INCLUIR_PEDIDO = {
   items: true,
@@ -167,7 +170,7 @@ export async function crearPedido(usuarioId, body) {
     resueltos.set(clave, item.cantidad);
   }
 
-  const pedido = await prisma.$transaction(async (tx) => {
+  const pedido = await transaccionLarga(async (tx) => {
     // 2) Usuario y dirección (verificación de propiedad → anti-IDOR)
     const usuario = await tx.usuario.findUnique({
       where: { id: usuarioId },
@@ -445,7 +448,7 @@ const TRANSICIONES = {
 };
 
 export async function cambiarEstado(id, estadoNuevo, usuarioId, comentario) {
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const pedido = await tx.pedido.findUnique({
       where: { id: BigInt(id) },
       include: { items: true, pagos: true },
@@ -502,7 +505,7 @@ export async function cambiarEstado(id, estadoNuevo, usuarioId, comentario) {
 
 // Confirmación de pago por un admin (transferencia/depósito/contra entrega)
 export async function confirmarPago(id, adminId) {
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const pedido = await tx.pedido.findUnique({ where: { id: BigInt(id) }, include: { pagos: true } });
     if (!pedido) return null;
     const pago = pedido.pagos[0];
@@ -533,7 +536,7 @@ export async function confirmarPago(id, adminId) {
 
 // Registro del envío por un admin
 export async function registrarEnvio(id, body, adminId) {
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const pedido = await tx.pedido.findUnique({ where: { id: BigInt(id) }, include: { envio: true } });
     if (!pedido) return null;
     if (!pedido.envio) throw new ApiError(CODIGOS.NO_ENCONTRADO, 'El pedido no tiene envío asociado.');

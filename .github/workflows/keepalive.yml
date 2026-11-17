@@ -1,0 +1,25 @@
+# keepalive.yml — mantiene despierta la API (Render free) y, de paso, el
+# proyecto de Supabase gratis, con una consulta de SOLO LECTURA una vez al día.
+#
+# No hay secretos: se consulta GET /api/productos, público. GitHub puede
+# desactivar los workflows programados tras un periodo largo sin actividad en
+# el repo; si eso pasa, basta con hacer un commit o ejecutarlo a mano con
+# "Run workflow" (workflow_dispatch). Para reanudar un proyecto de Supabase
+# pausado: Supabase → proyecto → "Resume project".
+name: Keepalive diario
+
+on:
+  schedule:
+    # Cada día a las 12:00 UTC (09:00 Ecuador). Horario de verano aparte.
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar catálogo (solo lectura)
+        run: curl -fsS --retry 5 --retry-delay 20 --max-time 120 https://carresol-api.onrender.com/api/productos > /dev/null

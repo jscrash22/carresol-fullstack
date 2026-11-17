@@ -1,7 +1,7 @@
 // routes/admin.js — panel de administración (usuarios, pedidos, catálogo, auditoría, parámetros)
 import { Router } from 'express';
 import {
-  usuarios, pedidos, detalles, resumen,
+  usuarios, actualizarUsuario, pedidos, detalles, resumen,
   categorias, crearCategoria, actualizarCategoria,
   materiales, crearMaterial, actualizarMaterial,
   auditoria, listarParametros, actualizarParametro,
@@ -9,6 +9,7 @@ import {
 import {
   validarPedidosQuery, validarCategoriaAdmin, validarCategoriaParcial,
   validarMaterialAdmin, validarMaterialParcial, validarParametro, validarAuditoriaQuery,
+  validarCambioUsuario,
 } from '../middleware/validators.js';
 import { authRequired, requireRole } from '../middleware/auth.js';
 
@@ -18,6 +19,7 @@ const router = Router();
 router.use(authRequired, requireRole('admin'));
 
 router.get('/usuarios', usuarios);
+router.patch('/usuarios/:id', validarCambioUsuario, actualizarUsuario);
 router.get('/pedidos', validarPedidosQuery, pedidos);
 router.get('/detalles', detalles);
 router.get('/resumen', resumen);

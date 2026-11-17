@@ -12,6 +12,16 @@ import { prisma } from './models/db.js';
 const PUERTO = Number(process.env.PORT || 3000);
 const aqui = dirname(fileURLToPath(import.meta.url));
 
+// Los mensajes de Prisma pueden incluir host:puerto o la cadena de conexión.
+// Nunca los dejamos salir a consola: solo texto sanitizado y sin valores.
+function mensajeSeguro(error) {
+  return String(error?.message || error)
+    .replace(/postgresql:\/\/\S+/gi, '[CADENA_OCULTA]')
+    .replace(/`[^`]+:\d{2,5}`/g, '[HOST_OCULTO]')
+    .split('\n')[0]
+    .slice(0, 300);
+}
+
 function arrancar() {
   if (String(process.env.HTTPS).toLowerCase() === 'true') {
     const clave = join(aqui, 'certs', 'key.pem');
@@ -42,8 +52,9 @@ async function main() {
     await prisma.$queryRaw`SELECT 1`;
     logger.info('Conexión a la base de datos: OK');
   } catch (e) {
-    logger.error('No se pudo conectar a la base de datos:', e.message);
+    logger.error('No se pudo conectar a la base de datos:', mensajeSeguro(e));
     logger.error('Revisa DATABASE_URL en server/.env (y que el motor esté levantado).');
+    await prisma.$disconnect().catch(() => {});
     process.exit(1);
   }
   arrancar();
@@ -51,9 +62,23 @@ async function main() {
 
 main();
 
-// Cierre limpio
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  logger.info('Servidor detenido.');
+// Errores fatales del proceso: registrar sin datos sensibles y salir con código 1
+// para que Render reinicie la instancia limpiamente (en vez de dejarla "zombi").
+function terminarPorErrorFatal(motivo, error) {
+  logger.error(`${motivo}: ${mensajeSeguro(error)}`);
+  void (async () => {
+    await prisma.$disconnect().catch(() => {});
+    process.exit(1);
+  })();
+}
+process.on('unhandledRejection', (error) => terminarPorErrorFatal('Promesa rechazada no manejada', error));
+process.on('uncaughtException', (error) => terminarPorErrorFatal('Excepción no capturada', error));
+
+// Cierre limpio (SIGINT de consola y SIGTERM de Render)
+async function cerrar(senal) {
+  await prisma.$disconnect().catch(() => {});
+  logger.info(`Servidor detenido (${senal}).`);
   process.exit(0);
-});
+}
+process.on('SIGINT', () => cerrar('SIGINT'));
+process.on('SIGTERM', () => cerrar('SIGTERM'));

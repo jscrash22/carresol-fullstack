@@ -15,6 +15,18 @@ export async function usuarios(req, res, next) {
   }
 }
 
+// PATCH /api/admin/usuarios/:id — activar/desactivar y/o cambiar rol
+export async function actualizarUsuario(req, res, next) {
+  try {
+    const usuario = await admin.cambiarUsuario(req.params.id, req.body, req.usuario.id);
+    if (!usuario) return next(new ApiError(CODIGOS.NO_ENCONTRADO, 'Usuario no encontrado.'));
+    logger.info(`Usuario #${usuario.id} actualizado por el admin #${req.usuario.id}`);
+    return ok(res, usuario);
+  } catch (e) {
+    return next(e);
+  }
+}
+
 export async function pedidos(req, res, next) {
   try {
     return ok(res, await admin.todosLosPedidos({ estado: req.query.estado }));

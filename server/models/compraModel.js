@@ -10,6 +10,9 @@
 import { prisma } from './db.js';
 import { Prisma } from '@prisma/client';
 import { ApiError, CODIGOS } from '../utils/respuestas.js';
+import { TX_LARGA } from '../utils/transaccion.js';
+
+const transaccionLarga = (fn) => prisma.$transaction(fn, TX_LARGA);
 
 const INCLUIR_COMPRA = {
   proveedor: true,
@@ -178,7 +181,7 @@ export async function compraPorId(id) {
 export async function crearCompra(usuarioId, body) {
   const items = normalizarItems(body.items);
 
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const proveedor = await tx.proveedor.findUnique({ where: { id: BigInt(body.proveedorId) } });
     if (!proveedor || !proveedor.activo) {
       throw new ApiError(CODIGOS.NO_ENCONTRADO, 'El proveedor no existe o está inactivo.');
@@ -231,7 +234,7 @@ export async function actualizarCompra(id, usuarioId, body) {
   }
   const items = normalizarItems(body.items);
 
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     let proveedorId = existente.proveedorId;
     if (body.proveedorId !== undefined) {
       const proveedor = await tx.proveedor.findUnique({ where: { id: BigInt(body.proveedorId) } });
@@ -282,7 +285,7 @@ const TRANSICIONES_COMPRA = {
 // Cambio de estado. La recepción (recibida) suma stock UNA sola vez (idempotente:
 // recibida→recibida no es una transición permitida) y registra movimientos tipo 'compra'.
 export async function cambiarEstado(id, estadoNuevo, usuarioId) {
-  return prisma.$transaction(async (tx) => {
+  return transaccionLarga(async (tx) => {
     const compra = await tx.compra.findUnique({
       where: { id: BigInt(id) },
       include: { items: true },

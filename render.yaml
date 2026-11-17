@@ -19,6 +19,11 @@ services:
     startCommand: npm start
     autoDeploy: true
     envVars:
+      # Major LTS verificado en local (Node 24). Render lee esta variable para
+      # fijar la versión; si el servicio ya creado no la aplica, ponerla a mano
+      # en Dashboard → carresol-api → Environment (ver DESPLIEGUE_RENDER.md).
+      - key: NODE_VERSION
+        value: "24"
       - key: NODE_ENV
         value: production
       - key: HTTPS

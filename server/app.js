@@ -16,6 +16,7 @@ import comprasRouter from './routes/compras.js';
 import proveedoresRouter from './routes/proveedores.js';
 import inventarioRouter from './routes/inventario.js';
 import adminRouter from './routes/admin.js';
+import configPublicaRouter from './routes/configPublica.js';
 
 const app = express();
 
@@ -46,8 +47,13 @@ app.use(cors({
 // Logger de peticiones (middleware propio)
 app.use(loggerMiddleware);
 
-// Body JSON con límite de tamaño (endurecimiento)
-app.use(express.json({ limit: '10kb' }));
+// Body JSON con límite ampliado para pedidos con muchos ítems y productos con
+// variantes/imágenes. El tamaño de los ARREGLOS se valida aparte en validators.js
+// (ítems, variantes, imágenes) para no abrir la puerta a abusos.
+app.use(express.json({ limit: '64kb' }));
+
+// Configuración pública para el carrito/checkout (IVA, moneda, envío)
+app.use('/api/config-publica', configPublicaRouter);
 
 // Salud del servicio
 app.get('/', (req, res) => {

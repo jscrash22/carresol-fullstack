@@ -1,9 +1,9 @@
 // adminModel.js — vistas de administración (todas las tablas + resumen del negocio)
 import { prisma } from './db.js';
-import { listarUsuarios } from './usuarioModel.js';
+import { listarUsuarios, cambiarUsuario } from './usuarioModel.js';
 import { todosLosPedidos } from './pedidoModel.js';
 
-export { listarUsuarios, todosLosPedidos };
+export { listarUsuarios, cambiarUsuario, todosLosPedidos };
 
 // Detalles de pedidos (vista admin de pedido_items con su variante)
 export async function todosLosDetalles({ limit = 200 } = {}) {
