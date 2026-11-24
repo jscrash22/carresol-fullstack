@@ -137,6 +137,16 @@ function claveAccesoSimulada({ fecha, tipoComprobante, identificacion, ambiente,
 }
 
 // ---------- Creación del pedido (transacción completa) ----------
+// Un solo mensaje, con TODAS las variantes sin stock, para que la UI pueda
+// explicar el motivo y ajustar cantidades sin repetir intentos.
+function errorStock(detalles) {
+  const primero = detalles[0];
+  const sufijo = detalles.length > 1 ? ` (y ${detalles.length - 1} variante(s) más)` : '';
+  return new ApiError(CODIGOS.REGLA_NEGOCIO,
+    `Stock insuficiente: solo hay ${primero.disponible} unidades de "${primero.nombreProducto}" (${primero.sku}). Elige una cantidad entre 1 y ${primero.disponible}${sufijo}.`,
+    detalles);
+}
+
 export async function crearPedido(usuarioId, body) {
   const itemsBody = body.items ?? [];
 
@@ -219,17 +229,26 @@ export async function crearPedido(usuarioId, body) {
     });
     const porId = new Map(variantes.map((v) => [Number(v.id), v]));
 
-    // 5) Validación de existencia y stock
+    // 5) Validación de existencia y stock (se informa de TODAS las variantes)
+    const faltantes = [];
     for (const [varianteId, cantidad] of resueltos) {
       const v = porId.get(varianteId);
       if (!v) {
         throw new ApiError(CODIGOS.NO_ENCONTRADO, `La variante con id ${varianteId} no existe o está inactiva.`);
       }
       if (v.stock < cantidad) {
-        throw new ApiError(CODIGOS.REGLA_NEGOCIO,
-          `Stock insuficiente de "${v.producto.nombre}" (${v.sku}): quedan ${v.stock} y pediste ${cantidad}.`);
+        faltantes.push({
+          campo: `items[${varianteId}].cantidad`,
+          mensaje: `Solo hay ${v.stock} unidades disponibles de "${v.producto.nombre}" (${v.sku}).`,
+          varianteId,
+          sku: v.sku,
+          nombreProducto: v.producto.nombre,
+          solicitado: cantidad,
+          disponible: v.stock,
+        });
       }
     }
+    if (faltantes.length) throw errorStock(faltantes);
 
     // 6) Totales calculados en el servidor (subtotal + envío + IVA)
     let subtotal = new Prisma.Decimal(0);
@@ -254,8 +273,21 @@ export async function crearPedido(usuarioId, body) {
         data: { stock: { decrement: linea.cantidad } },
       });
       if (actualizados.count !== 1) {
-        throw new ApiError(CODIGOS.REGLA_NEGOCIO,
-          `El stock cambió mientras procesábamos tu pedido (${linea.v.sku}). Revisa tu carrito.`);
+        // Otra transacción pudo tomar unidades entre la lectura y el update.
+        const actual = await tx.variante.findUnique({
+          where: { id: linea.v.id },
+          include: { producto: true },
+        });
+        const disponible = Number(actual?.stock ?? 0);
+        throw errorStock([{
+          campo: `items[${linea.v.id}].cantidad`,
+          mensaje: `Solo hay ${disponible} unidades disponibles de "${actual?.producto?.nombre ?? linea.v.producto.nombre}" (${linea.v.sku}).`,
+          varianteId: Number(linea.v.id),
+          sku: linea.v.sku,
+          nombreProducto: actual?.producto?.nombre ?? linea.v.producto.nombre,
+          solicitado: linea.cantidad,
+          disponible,
+        }]);
       }
     }
 

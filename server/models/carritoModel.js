@@ -71,7 +71,15 @@ export async function sincronizar(usuarioId, items) {
       }
       if (variante.stock < item.cantidad) {
         throw new ApiError(CODIGOS.REGLA_NEGOCIO,
-          `Stock insuficiente de "${variante.producto.nombre}" (${variante.sku}).`);
+          `Stock insuficiente: solo hay ${variante.stock} unidades de "${variante.producto.nombre}" (${variante.sku}). Elige una cantidad entre 1 y ${variante.stock}.`,
+          [{
+            campo: `items[${item.varianteId}].cantidad`,
+            mensaje: `Solo hay ${variante.stock} unidades disponibles de "${variante.producto.nombre}" (${variante.sku}).`,
+            varianteId: Number(variante.id),
+            sku: variante.sku,
+            solicitado: item.cantidad,
+            disponible: variante.stock,
+          }]);
       }
       await tx.carritoItem.create({
         data: {
@@ -104,7 +112,16 @@ export async function agregarItem(usuarioId, { varianteId, cantidad = 1 }) {
     });
     const cantidadNueva = (existente?.cantidad ?? 0) + cantidad;
     if (cantidadNueva > variante.stock) {
-      throw new ApiError(CODIGOS.REGLA_NEGOCIO, `Solo quedan ${variante.stock} unidades de ${variante.sku}.`);
+      throw new ApiError(CODIGOS.REGLA_NEGOCIO,
+        `Solo hay ${variante.stock} unidades disponibles de "${variante.producto.nombre}" (${variante.sku}). Ya tienes ${existente?.cantidad ?? 0} en tu carrito.`,
+        [{
+          campo: 'cantidad',
+          mensaje: `Solo hay ${variante.stock} unidades disponibles de "${variante.producto.nombre}" (${variante.sku}).`,
+          varianteId: Number(variante.id),
+          sku: variante.sku,
+          solicitado: cantidadNueva,
+          disponible: variante.stock,
+        }]);
     }
     if (existente) {
       await tx.carritoItem.update({

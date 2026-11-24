@@ -218,8 +218,10 @@ export const validarPedido = validar([
     .isArray({ min: 1, max: 50 }).withMessage('items debe ser un arreglo con al menos un producto.'),
   body('items.*.varianteId').optional({ values: 'falsy' }).custom(esId).withMessage('varianteId debe ser entero positivo.'),
   body('items.*.productoId').optional({ values: 'falsy' }).custom(esId).withMessage('productoId debe ser entero positivo.'),
+  // Tope de "cordura" alto: el límite real es el stock de cada variante,
+  // validado con transacción en pedidoModel.js (mensaje pidiendo "unidades").
   body('items.*.cantidad')
-    .isInt({ min: 1, max: 50 }).withMessage('La cantidad por item debe estar entre 1 y 50.'),
+    .isInt({ min: 1, max: 10000 }).withMessage('La cantidad por item debe ser un número entero de unidades entre 1 y 10000.'),
   body()
     .custom((b) => b.items.every((i) => i.varianteId || i.productoId))
     .withMessage('Cada item necesita varianteId o productoId.'),
@@ -296,12 +298,12 @@ export const validarCarritoSync = validar([
   body('items')
     .isArray({ max: 50 }).withMessage('items debe ser un arreglo (máximo 50).'),
   body('items.*.varianteId').custom(esId).withMessage('varianteId debe ser entero positivo.'),
-  body('items.*.cantidad').isInt({ min: 1, max: 50 }).withMessage('La cantidad debe estar entre 1 y 50.'),
+  body('items.*.cantidad').isInt({ min: 1, max: 10000 }).withMessage('La cantidad debe ser un número entero de unidades entre 1 y 10000.'),
 ]);
 
 export const validarItemCarrito = validar([
   body('varianteId').custom(esId).withMessage('varianteId debe ser entero positivo.'),
-  body('cantidad').optional({ values: 'falsy' }).isInt({ min: 1, max: 50 }).withMessage('La cantidad debe estar entre 1 y 50.'),
+  body('cantidad').optional({ values: 'falsy' }).isInt({ min: 1, max: 10000 }).withMessage('La cantidad debe ser un número entero de unidades entre 1 y 10000.'),
 ]);
 
 // ---------- Favoritos ----------
@@ -345,7 +347,7 @@ export const validarProveedorParcial = validar(
 const reglasCompra = () => [
   body('items').isArray({ min: 1, max: 100 }).withMessage('items debe ser un arreglo con al menos una variante.'),
   body('items.*.varianteId').custom(esId).withMessage('varianteId debe ser entero positivo.'),
-  body('items.*.cantidad').isInt({ min: 1, max: 500 }).withMessage('La cantidad debe estar entre 1 y 500.'),
+  body('items.*.cantidad').isInt({ min: 1, max: 10000 }).withMessage('La cantidad debe ser un número entero de unidades entre 1 y 10000.'),
   body('items.*.costoUnitario').isFloat({ min: 0 }).withMessage('El costo unitario debe ser ≥ 0.'),
   body('numeroFacturaProveedor').optional({ values: 'falsy' }).trim()
     .isLength({ max: 40 }).withMessage('El número de factura admite 40 caracteres.'),

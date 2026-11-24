@@ -18,5 +18,5 @@ export const IVA = 0.15;
 // definitivo lo calcula el servidor (parámetro costo_envio_default).
 export const ENVIO_ESTIMADO = 10;
 
-// Tope de unidades por variante: mínimo entre 10 y el stock disponible
-export const MAX_POR_VARIANTE = 10;
+// No hay tope fijo de 10: el límite lo decide el stock real de cada variante
+// (frontend: carritoModel.js; backend: validators.js y pedidoModel.js).

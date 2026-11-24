@@ -8,7 +8,6 @@
 // sesión se fusiona SOLO si el dueño era `invitado`; si era otro usuario se
 // descarta y se carga el del servidor. Al cerrar sesión se vacía si el dueño era
 // un usuario, para que el carrito de A no acabe en la cuenta de B.
-import { MAX_POR_VARIANTE } from '../config.js';
 import { local, CLAVES, esClaveCarresol } from './almacenamiento.js';
 
 const VERSION = 2; // versión del formato (dueño + variantes + imágenes múltiples)
@@ -94,28 +93,39 @@ export function contarUnidades() {
   return carrito.reduce((a, i) => a + Number(i.cantidad || 0), 0);
 }
 
-// Tope por variante: el MENOR entre 10 (tope del Reto 1) y el stock de la variante
+// Tope por variante: el STOCK REAL. Ya no existe el límite fijo de 10 del Reto 1.
 export function topePorVariante(item) {
-  return Math.min(MAX_POR_VARIANTE, Math.max(0, Number(item?.stock ?? MAX_POR_VARIANTE)));
+  return Math.max(0, Math.floor(Number(item?.stock ?? 0)) || 0);
+}
+
+function mensajeSinStock(nombre, sku, stock) {
+  return `Solo hay ${stock} unidades disponibles${sku ? ` de ${sku}` : ''} de ${nombre}. Elige una cantidad entre 1 y ${stock}.`;
 }
 
 export function agregarProducto(variante, { producto, cantidad = 1 } = {}) {
   if (!variante || !(Number(variante.precio) > 0)) {
     return { ok: false, mensaje: 'Variante con precio inválido. Operación rechazada.' };
   }
-  const stock = Number(variante.stock ?? 0);
+  const stock = topePorVariante({ stock: variante.stock });
   const nombreProducto = producto?.nombre ?? variante.nombreProducto ?? 'Producto';
   if (stock <= 0) {
     return { ok: false, mensaje: `"${nombreProducto}" (${variante.material ?? ''} ${variante.medida ?? ''}) está agotado.` };
   }
+  const cantidadSolicitada = Number(cantidad);
+  if (!Number.isInteger(cantidadSolicitada) || cantidadSolicitada < 1) {
+    return { ok: false, mensaje: 'Ingresa una cantidad válida (entero mayor que 0).' };
+  }
   const existente = carrito.find((i) => Number(i.varianteId) === Number(variante.id));
-  const tope = topePorVariante({ stock });
-  const nuevaCant = (existente ? existente.cantidad : 0) + Number(cantidad);
-  if (nuevaCant > tope) {
-    return { ok: false, mensaje: `Máximo ${tope} unidades de esta variante (stock disponible: ${stock}).` };
+  const yaEnCarrito = existente ? Number(existente.cantidad) || 0 : 0;
+  const restantes = Math.max(0, stock - yaEnCarrito);
+  if (cantidadSolicitada > restantes) {
+    const mensaje = yaEnCarrito > 0
+      ? `Ya tienes ${yaEnCarrito} en tu carrito; puedes agregar hasta ${restantes} más.`
+      : mensajeSinStock(nombreProducto, variante.sku, stock);
+    return { ok: false, mensaje };
   }
   if (existente) {
-    existente.cantidad = nuevaCant;
+    existente.cantidad = yaEnCarrito + cantidadSolicitada;
     existente.stock = stock; // el stock siempre se refresca al agregar
   } else {
     carrito.push({
@@ -129,7 +139,7 @@ export function agregarProducto(variante, { producto, cantidad = 1 } = {}) {
       stock,
       imagen: urlImagenPrincipal(producto),
       alt: altImagenPrincipal(producto) || nombreProducto,
-      cantidad: Number(cantidad),
+      cantidad: cantidadSolicitada,
     });
   }
   persistir();
@@ -142,8 +152,8 @@ export function cambiarCantidad(varianteId, delta) {
   const nueva = Number(item.cantidad) + Number(delta);
   if (nueva <= 0) return eliminarProducto(varianteId);
   const tope = topePorVariante(item);
-  if (nueva > tope) {
-    return { ok: false, mensaje: `Máximo ${tope} unidades de esta variante (stock disponible: ${item.stock}).` };
+  if (!Number.isInteger(nueva) || nueva > tope) {
+    return { ok: false, mensaje: mensajeSinStock(item.nombre || 'Producto', item.sku, tope) };
   }
   item.cantidad = nueva;
   persistir();

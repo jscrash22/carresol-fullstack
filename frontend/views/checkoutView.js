@@ -4,7 +4,7 @@
 // IVA y total. Solo pinta; el controlador orquesta.
 import { construirFormularioDireccion } from './direccionFormView.js';
 import { formatearPrecio } from '../models/productoModel.js';
-import { IVA, ENVIO_ESTIMADO, MAX_POR_VARIANTE } from '../config.js';
+import { IVA, ENVIO_ESTIMADO } from '../config.js';
 
 const METODOS_PAGO = [
   { id: 'tarjeta', etiqueta: 'Tarjeta de crédito/débito', detalle: 'Pago simulado: no se piden datos de la tarjeta.' },
@@ -241,7 +241,7 @@ export function construirCheckout(contenedor, { direcciones, items, totales, onA
   agregar('Total estimado', formatearPrecio(totales.subtotal + ivaValor + ENVIO_ESTIMADO), true);
   const ayuda = document.createElement('p');
   ayuda.className = 'ayuda-password';
-  ayuda.textContent = 'Máximo 10 unidades por variante. El servidor valida el stock y calcula subtotal, envío, IVA y total definitivos.';
+  ayuda.textContent = 'Puedes pedir todas las unidades que haya en stock (sin límite de 10). El servidor valida el stock y calcula subtotal, envío, IVA y total definitivos.';
   resumen.append(h3, ul, dl, ayuda);
 
   layout.append(form, resumen);
