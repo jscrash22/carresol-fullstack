@@ -270,6 +270,12 @@ async function iniciar() {
     toast('Tu sesión había vencido. Inicia sesión de nuevo.', 'info', 6000);
   }
 
+  // Router y formularios ANTES de esperar a la red: así los esqueletos (o las
+  // tarjetas cacheadas) son visibles de inmediato, no detrás de una vista oculta.
+  window.addEventListener('hashchange', () => navegar(rutaActual()));
+  await navegar(rutaActual());
+  inicializarAuth({ alCambiarSesion });
+
   iniciarAvisoDespertar();
   let usuario = null;
   try {
@@ -294,13 +300,6 @@ async function iniciar() {
   } finally {
     detenerAvisoDespertar();
   }
-
-  // Router
-  window.addEventListener('hashchange', () => navegar(rutaActual()));
-  await navegar(rutaActual());
-
-  // Formularios de sesión (login/registro/cierre)
-  inicializarAuth({ alCambiarSesion });
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);

@@ -260,7 +260,6 @@ export function construirCheckout(contenedor, { direcciones, items, totales, onA
     aviso,
     btnConfirmar,
     cajaNuevaDireccion: cajaNueva,
-    MAX_POR_VARIANTE,
   };
 }
 
