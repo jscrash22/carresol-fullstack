@@ -64,8 +64,10 @@ const ESPERAS_MS = [0, 4000, 12000]; // antes del 1.º, 2.º y 3.er intento
 const TIEMPO_MAX_INTENTO_MS = 25000;
 
 let avisoDespertar = null;
+let temporizadorDespertar = null;
+let inicioDespertar = 0;
 
-function mostrarAvisoDespertar() {
+function mostrarAvisoDespertar(texto = 'El servidor está despertando…') {
   if (typeof document === 'undefined') return;
   if (!avisoDespertar) {
     avisoDespertar = document.createElement('p');
@@ -75,7 +77,7 @@ function mostrarAvisoDespertar() {
     avisoDespertar.setAttribute('aria-live', 'polite');
     document.body.appendChild(avisoDespertar);
   }
-  avisoDespertar.textContent = 'El servidor está despertando, puede tardar hasta un minuto…';
+  avisoDespertar.textContent = texto;
   avisoDespertar.hidden = false;
 }
 
@@ -84,6 +86,25 @@ function ocultarAvisoDespertar() {
     avisoDespertar.hidden = true;
     avisoDespertar.textContent = '';
   }
+}
+
+// Un único temporizador para la carga inicial: si la primera respuesta tarda
+// más de 3 s, muestra el mensaje con segundos transcurridos y sigue actualizando.
+export function iniciarAvisoDespertar() {
+  detenerAvisoDespertar();
+  inicioDespertar = Date.now();
+  const actualizar = () => {
+    const segundos = Math.max(1, Math.round((Date.now() - inicioDespertar) / 1000));
+    mostrarAvisoDespertar(`El servidor está despertando… (≈ ${segundos} s)`);
+    temporizadorDespertar = setTimeout(actualizar, 1000);
+  };
+  temporizadorDespertar = setTimeout(actualizar, 3000);
+}
+
+export function detenerAvisoDespertar() {
+  if (temporizadorDespertar) clearTimeout(temporizadorDespertar);
+  temporizadorDespertar = null;
+  ocultarAvisoDespertar();
 }
 
 const esperar = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
@@ -96,7 +117,7 @@ async function pedir(metodo, ruta, cuerpo) {
 
   for (let intento = 0; intento < intentos; intento += 1) {
     if (intento > 0) {
-      mostrarAvisoDespertar();
+      mostrarAvisoDespertar('El servidor está despertando… reintentando petición.');
       await esperar(ESPERAS_MS[intento] || 12000);
     }
     try {
@@ -121,7 +142,6 @@ async function pedir(metodo, ruta, cuerpo) {
       }
     }
   }
-  ocultarAvisoDespertar();
 
   let json = null;
   try { json = await res.json(); } catch { /* cuerpo no JSON */ }

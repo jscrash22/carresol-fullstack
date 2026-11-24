@@ -1,9 +1,11 @@
 // almacenamiento.js — ÚNICO punto de acceso a localStorage/sessionStorage del frontend.
 //
 // Política (§4.1 del super prompt):
-//   localStorage  → carrito y favoritos de INVITADO, dueño, versión y fecha.
+//   localStorage  → carrito y favoritos de INVITADO, dueño, versión y fecha,
+//                    además de una copia PÚBLICA del catálogo (sin datos personales).
 //   sessionStorage → token/usuario, estado de pantalla (filtros, pestaña, paso)
-//                    y borradores. NUNCA contraseñas ni tokens en localStorage.
+//                    y borradores/avisos de la sesión. NUNCA contraseñas ni tokens
+//                    en localStorage.
 //   URL (hash)    → vista actual.
 //
 // Todas las claves llevan el prefijo `carresol_`. Si el navegador bloquea el
@@ -94,6 +96,8 @@ export const CLAVES = Object.freeze({
   BORRADOR_CHECKOUT: 'borrador_checkout',
   BORRADOR_CONTACTO: 'borrador_contacto',
   BORRADOR_LOGIN: 'borrador_login',
+  AVISO_GLOBAL: 'aviso_global',
+  CATALOGO_CACHE: 'catalogo_cache',
 });
 
 // Borradores = datos temporales de formularios. Nunca contraseñas.

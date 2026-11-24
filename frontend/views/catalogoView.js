@@ -1,6 +1,6 @@
 // catalogoView.js — vista del catálogo: filtros, grid, paginación y estados
 import { crearProductoCard } from './productoCard.js';
-import { spinner } from './uiComponents.js';
+import { esqueletos } from './uiComponents.js';
 import { CATEGORIAS } from '../models/productoModel.js';
 
 const POR_PAGINA = 8;
@@ -20,7 +20,7 @@ export function renderizarFiltros(contenedor, categoriaActual, onFiltrar) {
 
 export function renderizarCargando(grid) {
   grid.textContent = '';
-  grid.appendChild(spinner('Cargando el catálogo…'));
+  grid.appendChild(esqueletos(8));
 }
 
 export function renderizarError(grid, mensaje, onReintentar) {

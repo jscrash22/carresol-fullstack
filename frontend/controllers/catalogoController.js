@@ -1,15 +1,15 @@
 // catalogoController.js — carga el catálogo desde la API, filtros y paginación.
-// Frescura (§4.2): expone recargarCatalogo({ silencioso }), el evento
-// `carresol:catalogo-invalidado` y registra cuándo se cargaron los datos.
-// El estado de filtro/página vive en sessionStorage: una pestaña nueva arranca
-// limpia; el hash sigue decidiendo la vista visible.
+// Frescura (§4.2): stale-while-revalidate con una copia PÚBLICA en localStorage.
+// La copia se pinta al instante; los datos frescos llegan en segundo plano.
+// Carrito y checkout SIEMPRE revalidan con la API antes de comprar.
 import * as productosApi from '../models/productoModel.js';
 import { toast } from '../views/uiComponents.js';
 import * as vista from '../views/catalogoView.js';
-import { sesion, CLAVES } from '../models/almacenamiento.js';
+import { local, sesion, CLAVES } from '../models/almacenamiento.js';
 
 const $ = (sel) => document.querySelector(sel);
 const FRESCO_MS = 30 * 1000;
+const CACHE_VERSION = 1;
 
 let productos = [];
 let categoriaActual = sesion.get(CLAVES.FILTRO_CATALOGO, 'todos') || 'todos';
@@ -29,6 +29,28 @@ export function invalidarCatalogo() {
   window.dispatchEvent(new CustomEvent('carresol:catalogo-invalidado'));
 }
 
+function leerCopia() {
+  const copia = local.json(CLAVES.CATALOGO_CACHE, null);
+  if (!copia || copia.version !== CACHE_VERSION || !Array.isArray(copia.productos) || !copia.productos.length) {
+    return null;
+  }
+  return copia;
+}
+
+function guardarCopia(lista) {
+  local.set(CLAVES.CATALOGO_CACHE, {
+    version: CACHE_VERSION,
+    fecha: Date.now(),
+    // Solo información pública del catálogo: nunca carrito, sesión ni datos personales.
+    productos: lista,
+  });
+}
+
+function marcarActualizando(activo) {
+  const aviso = $('#catalogo-actualizando');
+  if (aviso) aviso.hidden = !activo;
+}
+
 export function inicializar({ onVerDetalle, onToggleFav }) {
   callbacks = { onVerDetalle, onToggleFav };
   vista.renderizarFiltros($('#filtros'), categoriaActual, (cat) => {
@@ -39,34 +61,60 @@ export function inicializar({ onVerDetalle, onToggleFav }) {
     renderizar();
   });
 
+  // Pintar YA la estructura: copia anterior o esqueletos (nunca un spinner que
+  // bloquea la vista). La revalidación llega justo después desde la API.
+  const copia = leerCopia();
+  if (copia) {
+    productos = copia.productos;
+    cargadoEn = copia.fecha || 0;
+    renderizar();
+    marcarActualizando(true);
+  } else {
+    vista.renderizarCargando($('#grid-productos'));
+  }
+
   // Cualquier módulo (checkout, admin) puede pedir frescura sin acoplarse.
   window.addEventListener('carresol:catalogo-invalidado', () => {
     recargarCatalogo({ silencioso: true });
   });
 }
 
+// Revalida con la API. Si hay copia, se mantiene visible mientras llega la
+// respuesta; si no hay copia, se muestran esqueletos.
 export async function cargarCatalogo() {
   const grid = $('#grid-productos');
-  vista.renderizarCargando(grid);
+  if (!leerCopia()) vista.renderizarCargando(grid);
+  else marcarActualizando(true);
   try {
     productos = await productosApi.obtenerProductos();
     cargadoEn = Date.now();
+    guardarCopia(productos);
     renderizar();
     window.dispatchEvent(new CustomEvent('carresol:catalogo-actualizado', { detail: getProductos() }));
+    return true;
   } catch (err) {
-    vista.renderizarError(grid, err.esRed
-      ? 'No se pudo conectar con el servidor.'
-      : err.message, () => cargarCatalogo());
-    toast(err.message, 'error');
+    if (!leerCopia()) {
+      vista.renderizarError(grid, err.esRed
+        ? 'No se pudo conectar con el servidor.'
+        : err.message, () => cargarCatalogo());
+      toast(err.message, 'error');
+    } else {
+      toast('No se pudo actualizar el catálogo; se muestra la última copia guardada.', 'info', 5000);
+    }
+    return false;
+  } finally {
+    marcarActualizando(false);
   }
 }
 
 // Recarga en segundo plano: sin spinner de pantalla completa ni avisos si sale
 // bien (§4.2). Solo se muestra un aviso si falla una recarga silenciosa.
 export async function recargarCatalogo({ silencioso = true } = {}) {
+  marcarActualizando(true);
   try {
     productos = await productosApi.obtenerProductos();
     cargadoEn = Date.now();
+    guardarCopia(productos);
     renderizar();
     window.dispatchEvent(new CustomEvent('carresol:catalogo-actualizado', { detail: getProductos() }));
     return true;
@@ -75,6 +123,8 @@ export async function recargarCatalogo({ silencioso = true } = {}) {
       toast(err.message || 'No se pudo actualizar el catálogo.', 'error');
     }
     return false;
+  } finally {
+    marcarActualizando(false);
   }
 }
 
