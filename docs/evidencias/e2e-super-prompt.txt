@@ -1,4 +1,4 @@
-=== NUEVAS PRUEBAS §5 — 2026-11-17T16:16:59.660Z ===
+=== NUEVAS PRUEBAS §5 — 2026-11-24T13:31:37.820Z ===
 Frontend: http://localhost:5500 · API simulada (sin escrituras en Supabase)
 
 PASS ✓ Estático: ningún acceso directo a localStorage/sessionStorage fuera de almacenamiento.js — 31 archivos JS revisados

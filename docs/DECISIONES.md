@@ -430,3 +430,46 @@ Cada fase agrega sus decisiones al final de este archivo.
   certificados, logs y el zip anterior. El listado se revisó y el contenido extraído se
   escaneó contra los valores reales del `.env`: **0 fugas**
   (`docs/evidencias/escaneo-secretos-zip.txt`), sin imprimir credenciales.
+
+## FASE 16 — Correcciones UX sobre la entrega desplegada
+
+- **Control de cambios**: se creó el tag `antes-ux` en `21d123d` (entrega anterior intacta) y se
+  trabajó en la rama `ux-correcciones` con commits pequeños en español. `main` solo se fusiona
+  si todas las verificaciones quedan en PASS. No se hizo `git push --force`.
+- **Reproducción previa**: antes de tocar código se ejecutó Playwright con API simulada para no
+  escribir en Supabase. `docs/evidencias/reproduccion-ux-antes.txt` confirma: sin aviso de
+  registro en el formulario ni banner; botón de cierre de `16×27 px` que desaparecía con scroll
+  (`top=-144 px`) y sin cierre por fondo; sin “Volver al catálogo”; `input.max=10` con stock 12;
+  modal que se cerraba aunque fallara el agregado. `rendimiento.txt` dejó la línea base
+  (catálogo 1827 ms caliente, 10539 ms frío, 3527 ms con red lenta y sin esqueletos).
+- **1) Registro visible**: el éxito y el error 409 se muestran dentro del propio formulario
+  (`mostrarExitoRegistro` / `mostrarErrorRegistro`, con `aria-live` y `aria-invalid`), y el éxito
+  además queda en un banner global de `sessionStorage` que sobrevive a la navegación, se cierra
+  manualmente y desaparece solo a los ~6 s. El registro duplicado **no navega**.
+- **2) Cierre del modal**: `uiComponents.js` exporta `crearBotonCerrar` (SVG, ≥44×44,
+  `aria-label`) y `crearBarraCierre` (`position: sticky`) para detalle, cuenta y admin; se
+  unificaron además los botones estáticos de carrito/favoritos. El fondo y Esc cierran, el foco
+  vuelve a la tarjeta que abrió el modal y se añadió “Volver al catálogo”. La franja sticky
+  tiene `pointer-events: none` salvo en el botón (para no tapar el favorito) y los toasts son
+  meramente informativos: tampoco interceptan clics.
+- **3) Percepción de carga**: `index.html` añade `preconnect`, `rel=health` y
+  `modulepreload`; `appController` lanza el ping de salud y el arranque del router/formularios
+  antes de esperar la red, para que los esqueletos o las tarjetas cacheadas sean visibles de
+  inmediato. `catalogoController` implementa stale-while-revalidate: pinta la copia pública de
+  `localStorage` (`carresol_catalogo_cache`) y revalida en segundo plano; carrito y checkout
+  siguen revalidando stock contra la API. Medición DESPUÉS: esqueletos en 548–579 ms, catálogo
+  en 755/5556/2058 ms y segunda visita en 101 ms (detalle en `rendimiento.txt`).
+- **4) Stock real**: se eliminó `MAX_POR_VARIANTE=10` del frontend y del texto del checkout. El
+  `input.max`, el botón “Usar el máximo (N)” y el modelo de carrito usan el stock de la variante;
+  los errores de cantidad se muestran en línea y el modal **no se cierra** si el modelo rechaza
+  el agregado. El backend sube los topes de cordura a 10000 (validators: pedidos, carrito y
+  compras) pero el límite real sigue siendo el stock transaccional. `pedidoModel` y
+  `carritoModel` devuelven `Stock insuficiente: solo hay N unidades…` con `detalles` por
+  variante, sin romper el contrato (solo se añaden campos y mensajes).
+- **Verificación UX**: `docs/evidencias/e2e-ux.txt` → **26 PASS / 0 fallos** (registro, cierre,
+  cantidades, checkout y rendimiento) con datos `TEST-` y API simulada;
+  `docs/evidencias/topes-backend-ux.txt` → **6 PASS / 0 fallos** sobre express-validator en
+  aislamiento. La línea base histórica (81 backend / 37 E2E / 31 accesibilidad / 29 super
+  prompt) se conserva; B08 impide repetir escrituras reales y se documenta como B12.
+- **Sin secretos**: no se modificó `server/.env`, no se imprimieron credenciales y antes de cada
+  commit se ejecutó `escanear-secretos.js` con resultado **0 fugas**.

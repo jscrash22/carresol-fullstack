@@ -1,0 +1,30 @@
+=== VERIFICACIÓN UX — DESPUÉS — 2026-11-24T13:32:59.528Z ===
+Frontend: http://localhost:5500 · API simulada con Playwright (sin escrituras en Supabase).
+PASS ✓ 1. Registro: aviso visible en el formulario — ✅Usuario creado correctamente. ¡Bienvenido/a, Usuario Ux!
+PASS ✓ 1. Registro: aviso conservado en la vista de destino — ✅Usuario creado correctamente. ¡Bienvenido/a, Usuario Ux!
+PASS ✓ 1. Registro: navegación automática — hash=#/catalogo
+PASS ✓ 1. Registro: aviso desaparece solo tras ~6 s — oculto=true
+PASS ✓ 1. Registro duplicado: error dentro del formulario — form=Ya existe una cuenta con ese correo electrónico.; email=Ya existe una cuenta con ese correo electrónico.
+PASS ✓ 1. Registro duplicado: NO navega — hash=#/login; aria-invalid=true
+PASS ✓ 2. Modal: botón SVG accesible ≥44×44 — svg=true; 44×44; aria=Cerrar detalle de producto
+PASS ✓ 2. Modal: cierre fijo con scroll — top=72px
+PASS ✓ 2. Modal: clic en el fondo cierra — cerró
+PASS ✓ 2. Modal: Esc cierra y devuelve el foco a la tarjeta — foco=Ver detalle de Anillo Prueba UX
+PASS ✓ 2. Modal: botón "Volver al catálogo" — presente
+PASS ✓ 4. Cantidad: input.max es el stock real — max=12
+PASS ✓ 4. Cantidad: botón "Usar el máximo (N)" — Usar el máximo (12)
+PASS ✓ 4. Cantidad: modal NO se cierra si se rechaza — permaneció abierto
+PASS ✓ 4. Cantidad: error en línea con unidades disponibles — Solo hay 12 unidades disponibles de esta variante. Elige una cantidad entre 1 y 12.
+PASS ✓ 4. Checkout: mensaje de stock con unidades — Stock insuficiente: solo hay 12 unidades de "Anillo Prueba UX" (TEST-UX-7). Elige una cantidad entre 1 y 12.
+PASS ✓ Rendimiento API caliente: primera vista útil — 709 ms
+PASS ✓ Rendimiento API caliente: esqueletos visibles — 548 ms
+PASS ✓ Rendimiento API caliente: catálogo — 755 ms
+PASS ✓ Rendimiento API fría (5 s): primera vista útil — 588 ms
+PASS ✓ Rendimiento API fría (5 s): esqueletos visibles — 541 ms
+PASS ✓ Rendimiento API fría (5 s): catálogo — 5556 ms
+PASS ✓ Rendimiento Red lenta (1,5 s): primera vista útil — 594 ms
+PASS ✓ Rendimiento Red lenta (1,5 s): esqueletos visibles — 538 ms
+PASS ✓ Rendimiento Red lenta (1,5 s): catálogo — 2058 ms
+PASS ✓ 3. Segunda visita: catálogo desde caché (<500 ms) — 1.ª=2092 ms; 2.ª=101 ms
+
+RESUMEN DESPUÉS: 26 PASS / 0 FALLAS.

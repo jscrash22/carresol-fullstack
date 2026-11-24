@@ -384,12 +384,14 @@ controles; tablas con `th[scope]`; contraste AA verificado programáticamente (�
 - **Compras = reposición de inventario** a proveedores; recibir una compra suma stock una
   sola vez y lo registra en el kardex.
 - **Favoritos híbridos**: local para invitados, sincronizados con la cuenta al iniciar
-  sesión. **Carrito por variante** con tope `mín(10, stock)`. El carrito y los favoritos
-  llevan dueño: al cambiar de usuario se descarta lo del anterior y se carga lo del servidor.
-- **Almacenamiento del navegador**: `localStorage` solo para carrito/favoritos de invitado;
-  token, filtros, pestaña, paso y borradores viven en `sessionStorage` y mueren con la pestaña.
-  La vista depende del hash de la URL. Nunca se guardan contraseñas. Detalle en
-  `docs/DECISIONES.md` (FASE 14).
+  sesión. **Carrito por variante con tope = stock real** (ya no hay límite de 10). El carrito
+  y los favoritos llevan dueño: al cambiar de usuario se descarta lo del anterior y se carga
+  lo del servidor.
+- **Almacenamiento del navegador**: `localStorage` guarda carrito/favoritos de invitado **y
+  una copia pública del catálogo** (`carresol_catalogo_cache`, stale-while-revalidate: se pinta
+  al instante y se revalida en segundo plano). Token, filtros, pestaña, paso, borradores y el
+  aviso de registro viven en `sessionStorage` y mueren con la pestaña. La vista depende del
+  hash de la URL. Nunca se guardan contraseñas. Detalle en `docs/DECISIONES.md` (FASE 14 y 16).
 - **Paginación del catálogo** de 8 productos por página (patrón del Reto 1 conservado).
 - BigInt → Number y DECIMAL → Number al salir de los modelos (JSON plano).
 

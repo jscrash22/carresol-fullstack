@@ -102,9 +102,24 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
 
 - Render puede tardar ~1 minuto en responder la primera petición tras un periodo inactivo;
   Supabase gratis puede pausar el proyecto.
-- **Plan B**: `appController` muestra un aviso `aria-live` mientras reintenta las GET, el
-  workflow `.github/workflows/keepalive.yml` hace una petición diaria a `/api/productos`, y el
-  README explica cómo reanudar Supabase desde el dashboard.
+- **Plan B**: `appController` lanza un ping temprano a `/api/health`, muestra un aviso `aria-live`
+  mientras reintenta las GET y pinta esqueletos/caché antes de esperar la red; el workflow
+  `.github/workflows/keepalive.yml` hace una petición diaria a `/api/productos`, y el README
+  explica cómo reanudar Supabase desde el dashboard.
+
+## B12 — Pedido real de más de 10 unidades contra Supabase (FASE 16, vigente)
+
+- **Qué pasó**: B08 sigue bloqueando los poolers (6543/5432) desde esta máquina, así que no es
+  seguro ejecutar un pedido/carrito real con cantidades altas contra la BD desplegada (hay datos
+  ajenos y no se pueden limpiar).
+- **Plan B aplicado**:
+  1. `validar-topes-ux.mjs` comprueba en aislamiento (sin `.env`, sin BD) que 2000/600 unidades
+     pasan la validación y que el mensaje de error habla de “unidades” — **6 PASS**.
+  2. `pw-ux-despues.mjs` intercepta la API con Playwright y verifica el mensaje
+     `Stock insuficiente: solo hay 12 unidades…` en el checkout — **26 PASS** globales.
+  3. No se escribió ningún dato `TEST-` en Supabase; por tanto no hay limpieza pendiente en BD.
+- **Pendiente para el estudiante**: si quiere la prueba end-to-end real, ejecutarla desde una red
+  con egress permitido a Supabase, usar solo usuarios/productos `TEST-` y borrarlos después.
 
 ---
 
@@ -122,4 +137,5 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
 | B08 | VIGENTE — egress local bloqueado; Plan B con API simulada |
 | B09 | VIGENTE — riesgo `npm audit` aceptado |
 | B10 | RESUELTO — push normal y verificación 14/0/0 |
-| B11 | VIGENTE — mitigado con keepalive y avisos |
+| B11 | VIGENTE — mitigado con keepalive, health early y esqueletos |
+| B12 | VIGENTE — verificación real de stock alto pendiente; Plan B con API simulada |

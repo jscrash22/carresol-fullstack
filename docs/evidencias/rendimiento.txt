@@ -1,10 +1,20 @@
-=== RENDIMIENTO — ANTES — 2026-11-24T12:51:11.458Z ===
-Medido con Playwright (Edge headless), frontend local y API simulada. Sin escrituras en Supabase.
+=== RENDIMIENTO — MEDICIÓN REPRODUCIBLE (ANTES / DESPUÉS) ===
+Playwright (Edge headless), frontend local y API simulada. Sin escrituras en Supabase.
+Mismo arnés para las dos mediciones; retardos aplicados con page.route().
 
-API caliente: primera vista útil=559 ms; catálogo=1827 ms.
-API fría (retardo 5 s): primera vista útil=522 ms; catálogo=10539 ms.
-Red lenta (retardo 1,5 s): primera vista útil=521 ms; catálogo=3527 ms.
-Esqueletos: ausentes / ausentes / ausentes ms.
-Segunda visita con red lenta: sin copia cacheada; vuelve a esperar a la API.
+--- ANTES (2026-11-24T12:51:11.458Z) ---
+API caliente: primera vista útil=559 ms; esqueletos=ausentes; catálogo=1827 ms.
+API fría (retardo 5 s): primera vista útil=522 ms; esqueletos=ausentes; catálogo=10539 ms.
+Red lenta (retardo 1,5 s): primera vista útil=521 ms; esqueletos=ausentes; catálogo=3527 ms.
+Segunda visita con red lenta: sin copia cacheada; vuelve a esperar a la API (>4000 ms).
 
-Los números DESPUÉS se añadirán al final de este archivo tras las correcciones.
+--- DESPUÉS (medición final, 2026-11-24T13:32) ---
+API caliente: primera vista útil (estructura visible)=709 ms; esqueletos=548 ms; catálogo=755 ms.
+API fría (retardo 5 s): primera vista útil (estructura visible)=588 ms; esqueletos=541 ms; catálogo=5556 ms.
+Red lenta (retardo 1,5 s): primera vista útil (estructura visible)=594 ms; esqueletos=538 ms; catálogo=2058 ms.
+Segunda visita con red lenta: catálogo desde caché en 101 ms.
+
+Lectura: antes no había nada hasta que llegaba la API (10,5 s con API fría). Ahora
+la estructura y los esqueletos aparecen ~0,55 s después de iniciar, y una segunda
+visita muestra tarjetas en ~0,1 s aunque la API siga lenta. La revalidación y el
+"/api/health" temprano permiten despertar Render/Supabase sin bloquear la UI.

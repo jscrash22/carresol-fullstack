@@ -1,7 +1,8 @@
-=== TOPES BACKEND — DESPUES — 2026-11-24T13:11:25.537Z ===
+=== TOPES BACKEND — DESPUES — 2026-11-24T13:27:48.578Z ===
 PASS ✓ Pedido de 11 unidades (DESPUES) — HTTP 200; sin mensaje
 PASS ✓ Pedido de 2000 unidades (DESPUES) — HTTP 200; sin mensaje
 PASS ✓ Carrito sync con 2000 unidades (DESPUES) — HTTP 200; sin mensaje
 PASS ✓ Item de carrito con 2000 unidades (DESPUES) — HTTP 200; sin mensaje
 PASS ✓ Compra con 600 unidades (DESPUES) — HTTP 200; sin mensaje
+PASS ✓ Tope de cordura 10001: mensaje claro en unidades — HTTP 422; Datos inválidos: revisa los campos enviados.
 Nota: se valida SOLO express-validator, sin base de datos ni credenciales.
