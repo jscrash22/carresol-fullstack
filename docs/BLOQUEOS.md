@@ -121,6 +121,19 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
 - **Pendiente para el estudiante**: si quiere la prueba end-to-end real, ejecutarla desde una red
   con egress permitido a Supabase, usar solo usuarios/productos `TEST-` y borrarlos después.
 
+## B13 — Fallo del despliegue de GitHub Pages tras el push (FASE 16, resuelto)
+
+- **Qué pasó**: el push con las correcciones UX disparó el workflow `pages.yml`, pero el paso
+  `Publicar` falló con `No artifacts named "github-pages" were found`. El artefacto sí se subía;
+  el buscador de artefactos de `deploy-pages@v4` ya no lo encontraba con las acciones antiguas
+  reforzadas a Node 24.
+- **Plan B aplicado**: se alinearon todas las acciones del workflow a versiones compatibles con
+  Node 24 y artefactos v7 (`checkout@v7`, `configure-pages@v6`, `upload-pages-artifact@v5`,
+  `deploy-pages@v5`) y se hizo un push normal (sin `--force`).
+- **Resultado**: la última ejecución (`45406506616`) terminó en **success** y el HTML/JS/CSS
+  públicos ya contienen `modulepreload`, `#aviso-global`, la copia `catalogo_cache` y la barra
+  de cierre sticky. La API sigue respondiendo `/api/health` y `/api/productos` (25).
+
 ---
 
 ## Resumen de estados
@@ -139,3 +152,4 @@ pero su estado actual está resuelto y es coherente con `docs/REPORTE_DESPLIEGUE
 | B10 | RESUELTO — push normal y verificación 14/0/0 |
 | B11 | VIGENTE — mitigado con keepalive, health early y esqueletos |
 | B12 | VIGENTE — verificación real de stock alto pendiente; Plan B con API simulada |
+| B13 | RESUELTO — Pages redesplegado con acciones Node 24 / artefactos v7 |

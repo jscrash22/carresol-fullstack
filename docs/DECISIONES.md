@@ -473,3 +473,14 @@ Cada fase agrega sus decisiones al final de este archivo.
   prompt) se conserva; B08 impide repetir escrituras reales y se documenta como B12.
 - **Sin secretos**: no se modificó `server/.env`, no se imprimieron credenciales y antes de cada
   commit se ejecutó `escanear-secretos.js` con resultado **0 fugas**.
+- **Integración y despliegue**: `origin/main` tenía dos commits de verificación de dominio para
+  AppScan que no se tenían en local; se integraron con `git merge --no-ff` (nunca `--force`) y se
+  hicieron pushes normales. El primer despliegue de Pages falló por incompatibilidad de artefactos
+  (B13); se actualizó `pages.yml` a `checkout@v7`, `configure-pages@v6`,
+  `upload-pages-artifact@v5` y `deploy-pages@v5`, y la ejecución `45406506616` terminó en success.
+  `verificacion-final.js` cerró **14 PASS / 0 FAIL / 0 PENDIENTE** contra la API pública.
+- **Entregable actualizado**: `Reto2_Carresol.zip` se regeneró con `tar` (rutas con `/`) tras las
+  correcciones UX: **218 entradas, ~3,6 MB**. Sigue excluyendo `.git`, `node_modules`,
+  `server/.env`, `server/backups/`, `server/certs/`, SQLite, logs y el zip anterior. El listado se
+  revisó y el contenido extraído se escaneó contra los valores reales del `.env`: **0 fugas**
+  (`docs/evidencias/escaneo-secretos-zip.txt`), sin imprimir credenciales.
