@@ -17,15 +17,18 @@ export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFav
   img.src = urlImagenPrincipal(producto) || '';
   img.alt = altImagenPrincipal(producto) || producto.nombre;
   img.loading = 'lazy';
+  img.decoding = 'async';
+  img.width = 500;
+  img.height = 400;
   img.addEventListener('error', () => {
     img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400"><rect width="500" height="400" fill="%23d4af37"/><text x="50%" y="50%" fill="white" font-size="24" text-anchor="middle">Carresol</text></svg>';
   });
-  img.addEventListener('click', () => onVerDetalle?.(producto));
+  img.addEventListener('click', (e) => onVerDetalle?.(producto, e.currentTarget));
   img.setAttribute('role', 'button');
   img.tabIndex = 0;
   img.setAttribute('aria-label', `Ver detalle de ${producto.nombre}`);
   img.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVerDetalle?.(producto); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVerDetalle?.(producto, e.currentTarget); }
   });
 
   const cuerpo = document.createElement('div');
@@ -59,7 +62,7 @@ export function crearProductoCard(producto, { onVerDetalle, onToggleFav, modoFav
   btnVer.textContent = 'Ver detalle';
   btnVer.setAttribute('aria-label', `Ver detalle de ${producto.nombre}`);
   btnVer.disabled = estadoStock.agotado && !nVariantes; // sin variantes visibles no hay nada que elegir
-  btnVer.addEventListener('click', () => onVerDetalle?.(producto));
+  btnVer.addEventListener('click', (e) => onVerDetalle?.(producto, e.currentTarget));
   acciones.appendChild(btnVer);
 
   if (!modoFavoritos) {

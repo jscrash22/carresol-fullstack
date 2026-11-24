@@ -7,8 +7,24 @@
   <title>Carresol | Joyería de lujo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://carresol-api.onrender.com" crossorigin />
+  <script>
+    // Arranca el "despertar" de Render ANTES de cargar módulos: es una lectura
+    // ligera a /api/health, sin credenciales y sin esperar su respuesta.
+    (function () {
+      window.__carresolArranque = performance.now();
+      try {
+        var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        var base = local ? 'http://localhost:3000/api' : 'https://carresol-api.onrender.com/api';
+        fetch(base + '/health', { mode: 'cors', credentials: 'omit', cache: 'no-store' }).catch(function () {});
+      } catch (e) { /* el arranque de la app no depende de este aviso */ }
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="modulepreload" href="controllers/appController.js" />
+  <link rel="modulepreload" href="models/almacenamiento.js" />
+  <link rel="modulepreload" href="views/uiComponents.js" />
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
@@ -38,18 +54,23 @@
   </header>
 
   <main id="contenido">
+    <div id="aviso-global" class="avisos-globales" aria-live="polite" hidden></div>
 
     <!-- ============ Vista: Inicio ============ -->
     <section id="vista-inicio" class="hero">
-      <h1>Elegancia que brilla en cada detalle</h1>
-      <p>Descubre la colección exclusiva de Carresol</p>
-      <a class="btn btn-dorado" href="#/catalogo">Explorar catálogo</a>
+      <img class="hero__imagen" src="assets/img/fondo/hero.jpg" alt="" aria-hidden="true" width="1600" height="900" fetchpriority="high" />
+      <div class="hero__contenido">
+        <h1>Elegancia que brilla en cada detalle</h1>
+        <p>Descubre la colección exclusiva de Carresol</p>
+        <a class="btn btn-dorado" href="#/catalogo">Explorar catálogo</a>
+      </div>
     </section>
 
     <!-- ============ Vista: Catálogo ============ -->
     <section id="vista-catalogo" class="seccion" hidden>
       <h2>Nuestra colección</h2>
       <div id="filtros" class="filtros" role="group" aria-label="Filtrar por categoría"></div>
+      <p id="catalogo-actualizando" class="catalogo-actualizando" role="status" aria-live="polite" hidden>Actualizando catálogo…</p>
       <div id="grid-productos" class="grid" aria-live="polite" aria-label="Listado de productos"></div>
       <nav id="paginacion" class="paginacion" aria-label="Navegación de páginas del catálogo"></nav>
     </section>
@@ -94,6 +115,8 @@
           <span id="error-reg-password" class="error" role="alert" aria-live="polite"></span>
           <p id="reg-ayuda-password" class="ayuda-password">Requisitos: • 8+ caracteres • mayúscula • minúscula • número</p>
         </div>
+        <p id="registro-error" class="error" role="alert" aria-live="assertive" hidden></p>
+        <div id="registro-exito" class="avisos-registro" role="status" aria-live="polite" hidden></div>
         <p class="aviso-demo" role="note">Tienda de demostración académica: los pedidos y pagos son simulados y no se envía ningún producto. Evita ingresar datos personales sensibles reales.</p>
         <button type="submit" class="btn btn-dorado">Crear cuenta</button>
       </form>

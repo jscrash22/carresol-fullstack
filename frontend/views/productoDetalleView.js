@@ -3,9 +3,8 @@
 // "Agregar al carrito" deshabilitado si no hay stock. Foco atrapado y Esc.
 import { formatearPrecio } from '../models/productoModel.js';
 import { esFavorito } from '../models/favoritosModel.js';
-import { abrirModal, cerrarModal } from './uiComponents.js';
-import { MAX_POR_VARIANTE } from '../config.js';
-import { urlImagenPrincipal, altImagenPrincipal } from '../models/carritoModel.js';
+import { abrirModal, cerrarModal, crearBarraCierre } from './uiComponents.js';
+import { urlImagenPrincipal, altImagenPrincipal, getCarrito } from '../models/carritoModel.js';
 import { etiquetaStock } from '../models/stockModel.js';
 
 let modal = null;
@@ -35,19 +34,24 @@ function porMaterial(variantes) {
   return grupos;
 }
 
+function yaEnCarrito(variante) {
+  const item = getCarrito().find((i) => Number(i.varianteId) === Number(variante?.id));
+  return Number(item?.cantidad) || 0;
+}
+
+// Unidades que aún se pueden agregar: el tope es el stock real, no 10.
+function maximoAgregable(variante) {
+  return Math.max(0, Math.floor(Number(variante?.stock) || 0) - yaEnCarrito(variante));
+}
+
 // Abre el detalle del producto. onAgregar(variante, producto, cantidad).
-export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) {
+export function abrirDetalleProducto(producto, { onAgregar, onToggleFav, disparador } = {}) {
   const m = asegurarModal();
   m.textContent = '';
 
   const contenido = document.createElement('div');
   contenido.className = 'panel-login__contenido';
-
-  const btnCerrar = document.createElement('button');
-  btnCerrar.className = 'btn-cerrar';
-  btnCerrar.setAttribute('aria-label', 'Cerrar detalle de producto');
-  btnCerrar.textContent = '✕';
-  btnCerrar.addEventListener('click', () => cerrarModal(m));
+  const barraCierre = crearBarraCierre(m, 'Cerrar detalle de producto');
 
   const layout = document.createElement('div');
   layout.className = 'detalle-layout';
@@ -105,18 +109,29 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
   let selMedida;
   let infoVariante;
   let btnAgregar;
+  let btnMaximo;
   let cantidadInput;
+  let errorCantidad;
 
   const varianteActual = () => {
     const grupo = grupos.get(selMaterial.value);
     return (grupo ?? []).find((v) => String(v.id) === selMedida.value) ?? null;
   };
 
+  const limpiarError = () => {
+    errorCantidad.textContent = '';
+    errorCantidad.hidden = true;
+    cantidadInput.removeAttribute('aria-invalid');
+  };
+
   const pintarVariante = () => {
     const v = varianteActual();
     infoVariante.textContent = '';
+    limpiarError();
     if (!v) return;
-    const stock = Number(v.stock ?? 0);
+    const stock = Math.max(0, Math.floor(Number(v.stock) || 0));
+    const ya = yaEnCarrito(v);
+    const maximo = Math.max(0, stock - ya);
     const estadoStock = etiquetaStock(stock, v.stockMinimo ?? 5);
     const linea1 = document.createElement('p');
     linea1.className = 'precio';
@@ -127,17 +142,42 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
     linea2.className = `stock ${estadoStock.clase}`.trim();
     const linea3 = document.createElement('p');
     linea3.className = 'ayuda-password';
-    linea3.textContent = `SKU: ${v.sku ?? '—'}`;
+    linea3.textContent = `SKU: ${v.sku ?? '—'}${ya > 0 ? ` · Ya tienes ${ya} en tu carrito` : ''}`;
     infoVariante.append(linea1, linea2, linea3);
 
-    const tope = Math.min(MAX_POR_VARIANTE, stock);
-    cantidadInput.max = String(Math.max(tope, 1));
-    cantidadInput.value = String(Math.min(Number(cantidadInput.value) || 1, Math.max(tope, 1)));
-    cantidadInput.disabled = stock <= 0;
-    btnAgregar.disabled = stock <= 0;
-    btnAgregar.setAttribute('aria-label', stock > 0
-      ? `Agregar ${producto.nombre} (${v.material}${v.medida ? ` ${v.medida}` : ''}) al carrito`
-      : `${producto.nombre} agotado`);
+    cantidadInput.max = String(Math.max(maximo, 1));
+    cantidadInput.value = '1';
+    cantidadInput.disabled = maximo <= 0;
+    btnMaximo.disabled = maximo <= 0;
+    btnMaximo.textContent = `Usar el máximo (${maximo})`;
+    btnAgregar.disabled = maximo <= 0;
+    btnAgregar.textContent = stock <= 0 ? 'Agotado' : maximo <= 0 ? 'Máximo en el carrito' : 'Agregar al carrito';
+    btnAgregar.setAttribute('aria-label', maximo <= 0
+      ? `${producto.nombre} sin unidades disponibles para agregar`
+      : `Agregar ${producto.nombre} (${v.material}${v.medida ? ` ${v.medida}` : ''}) al carrito`);
+  };
+
+  const validarCantidad = (v) => {
+    limpiarError();
+    const valor = Number(cantidadInput.value);
+    const ya = yaEnCarrito(v);
+    const maximo = maximoAgregable(v);
+    let mensaje = '';
+    if (!Number.isInteger(valor) || valor < 1) {
+      mensaje = 'Ingresa una cantidad válida (entero mayor que 0).';
+    } else if (valor > maximo) {
+      mensaje = ya > 0
+        ? `Ya tienes ${ya} en tu carrito; puedes agregar hasta ${maximo} más.`
+        : `Solo hay ${v.stock} unidades disponibles de esta variante. Elige una cantidad entre 1 y ${v.stock}.`;
+    }
+    if (mensaje) {
+      errorCantidad.textContent = mensaje;
+      errorCantidad.hidden = false;
+      cantidadInput.setAttribute('aria-invalid', 'true');
+      cantidadInput.focus();
+      return null;
+    }
+    return valor;
   };
 
   // Selector de material
@@ -207,10 +247,31 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
   cantidadInput.type = 'number';
   cantidadInput.id = 'detalle-cantidad';
   cantidadInput.min = '1';
-  cantidadInput.max = '10';
+  cantidadInput.max = '1';
   cantidadInput.value = '1';
   cantidadInput.required = true;
-  campoCantidad.append(lblCantidad, cantidadInput);
+
+  errorCantidad = document.createElement('p');
+  errorCantidad.id = 'detalle-error-cantidad';
+  errorCantidad.className = 'error';
+  errorCantidad.setAttribute('role', 'alert');
+  errorCantidad.setAttribute('aria-live', 'assertive');
+  errorCantidad.hidden = true;
+  cantidadInput.setAttribute('aria-describedby', 'detalle-error-cantidad');
+
+  btnMaximo = document.createElement('button');
+  btnMaximo.type = 'button';
+  btnMaximo.id = 'detalle-usar-maximo';
+  btnMaximo.className = 'btn btn-mini';
+  btnMaximo.addEventListener('click', () => {
+    const v = varianteActual();
+    if (!v) return;
+    limpiarError();
+    cantidadInput.value = String(Math.max(1, maximoAgregable(v)));
+    cantidadInput.focus();
+  });
+
+  campoCantidad.append(lblCantidad, cantidadInput, btnMaximo, errorCantidad);
 
   // Acciones
   const acciones = document.createElement('div');
@@ -240,22 +301,42 @@ export function abrirDetalleProducto(producto, { onAgregar, onToggleFav } = {}) 
   });
   acciones.appendChild(btnFav);
 
+  const btnVolver = document.createElement('button');
+  btnVolver.type = 'button';
+  btnVolver.className = 'btn btn-volver';
+  btnVolver.textContent = 'Volver al catálogo';
+  btnVolver.addEventListener('click', () => cerrarModal(m));
+
+  const pie = document.createElement('div');
+  pie.className = 'modal__pie';
+  pie.appendChild(btnVolver);
+
   form.append(campoMaterial, campoMedida, infoVariante, campoCantidad, acciones);
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const v = varianteActual();
-    const cantidad = Math.max(1, Number(cantidadInput.value) || 1);
-    if (!v || Number(v.stock) <= 0) return;
-    onAgregar(v, producto, cantidad);
+    if (!v) return;
+    const cantidad = validarCantidad(v);
+    if (cantidad === null) return;
+    // El modal NO se cierra si el modelo rechaza la cantidad: el usuario ve el
+    // motivo en la propia ficha y puede corregirla sin perder el contexto.
+    const res = await onAgregar(v, producto, cantidad);
+    if (res && res.ok === false) {
+      errorCantidad.textContent = res.mensaje || 'No se pudo agregar al carrito.';
+      errorCantidad.hidden = false;
+      cantidadInput.setAttribute('aria-invalid', 'true');
+      cantidadInput.focus();
+      return;
+    }
     cerrarModal(m);
   });
 
-  colDatos.appendChild(form);
+  colDatos.append(form, pie);
   layout.append(colImg, colDatos);
-  contenido.append(btnCerrar, layout);
+  contenido.append(barraCierre, layout);
   m.appendChild(contenido);
 
   llenarMedidas();
-  abrirModal(m, document.activeElement);
+  abrirModal(m, disparador || document.activeElement);
   return m;
 }

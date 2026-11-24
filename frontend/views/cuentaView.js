@@ -2,7 +2,7 @@
 // Solo pinta; cuentaController orquesta. Patrón tablist ARIA con flechas.
 import { construirFormularioDireccion } from './direccionFormView.js';
 import * as pedidosVista from './pedidosView.js';
-import { abrirModal, cerrarModal, spinner } from './uiComponents.js';
+import { abrirModal, cerrarModal, spinner, crearBarraCierre } from './uiComponents.js';
 
 export const PESTANAS_CUENTA = [
   { id: 'direcciones', etiqueta: 'Direcciones' },
@@ -190,11 +190,7 @@ export function abrirFormularioDireccion(direccion, onGuardar) {
   const contenido = document.createElement('div');
   contenido.className = 'panel-login__contenido';
 
-  const btnCerrar = document.createElement('button');
-  btnCerrar.className = 'btn-cerrar';
-  btnCerrar.setAttribute('aria-label', 'Cerrar formulario de dirección');
-  btnCerrar.textContent = '✕';
-  btnCerrar.addEventListener('click', () => cerrarModal(modal));
+  const barraCierre = crearBarraCierre(modal, 'Cerrar formulario de dirección');
 
   const h2 = document.createElement('h2');
   h2.id = 'titulo-modal-direccion';
@@ -237,7 +233,7 @@ export function abrirFormularioDireccion(direccion, onGuardar) {
   });
   acciones.append(btnCancelar, btnGuardar);
 
-  contenido.append(btnCerrar, h2, form.contenedor, error, acciones);
+  contenido.append(barraCierre, h2, form.contenedor, error, acciones);
   modal.appendChild(contenido);
   abrirModal(modal, document.activeElement);
   return modal;

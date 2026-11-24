@@ -1,7 +1,11 @@
 // authController.js — maneja login, registro, sesión actual y cierre de sesión
 import * as auth from '../models/authModel.js';
-import { toast, abrirModal, cerrarModal, mensajeEn } from '../views/uiComponents.js';
-import { cambiarTab, validarPassword, validarEmail, marcarCampo, mostrarErroresBackend } from '../views/loginView.js';
+import {
+  toast, mensajeEn, mostrarAviso, guardarAvisoGlobal,
+} from '../views/uiComponents.js';
+import {
+  cambiarTab, validarPassword, validarEmail, marcarCampo, limpiarErrores, mostrarErrorRegistro,
+} from '../views/loginView.js';
 import { sesion, CLAVES } from '../models/almacenamiento.js';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
@@ -71,13 +75,19 @@ export function inicializarAuth({ alCambiarSesion }) {
     try {
       const usuario = await auth.registrar(nombre, email, password);
       mensajeEn($('#login-aviso'), '');
+      limpiarErrores(vista, 'reg');
+      const texto = `Usuario creado correctamente. ¡Bienvenido/a, ${usuario.nombre}!`;
+      // El aviso vive en el formulario y, además, viaja a la vista de destino.
+      mostrarAviso($('#registro-exito'), texto, { tipo: 'exito', id: 'registro-exito-aviso', ms: 0 });
+      guardarAvisoGlobal(texto, 'exito');
       $('#form-registro').reset();
-      toast(`Cuenta creada. ¡Bienvenido/a, ${usuario.nombre}!`, 'ok');
+      toast(texto, 'ok', 4500);
       await alCambiarSesion(usuario);
       location.hash = destinoTrasLogin();
     } catch (err) {
-      if (err.detalles?.length) mostrarErroresBackend(vista, err);
-      else mensajeEn($('#login-aviso'), err.message, 'error');
+      mensajeEn($('#login-aviso'), '');
+      limpiarErrores(vista, 'reg');
+      mostrarErrorRegistro(vista, err);
     }
   });
 

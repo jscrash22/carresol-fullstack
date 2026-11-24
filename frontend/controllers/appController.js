@@ -2,7 +2,7 @@
 // Vistas del Reto 2 (§7): inicio, catálogo, login, mi cuenta (direcciones y
 // pedidos), checkout, admin y contacto (ahora contra la API).
 import { sesionGuardada, cerrarSesionLocal, usuarioActual } from '../models/authModel.js';
-import { tokenExpirado } from '../models/apiClient.js';
+import { tokenExpirado, iniciarAvisoDespertar, detenerAvisoDespertar } from '../models/apiClient.js';
 import { sesion, CLAVES } from '../models/almacenamiento.js';
 import { cargarConfiguracionPublica } from '../models/configModel.js';
 import * as catalogo from './catalogoController.js';
@@ -12,7 +12,7 @@ import { cargarCheckout } from './checkoutController.js';
 import * as adminCtrl from './adminController.js';
 import { inicializarAuth } from './authController.js';
 import * as contactoModel from '../models/contactoModel.js';
-import { toast } from '../views/uiComponents.js';
+import { toast, mejorarBotonesCerrarEstaticos, renderizarAvisoGlobal } from '../views/uiComponents.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -73,8 +73,9 @@ function protegida(ruta) {
 }
 
 async function navegar(ruta) {
-  if (protegida(ruta)) { mostrarVista('login'); return; }
+  if (protegida(ruta)) { mostrarVista('login'); renderizarAvisoGlobal(); return; }
   mostrarVista(ruta);
+  renderizarAvisoGlobal();
 
   // Frescura al entrar en inicio/catálogo: si los datos tienen >30 s se recarga
   // en segundo plano (sin spinner); el evento actualiza tarjetas y carrito.
@@ -226,6 +227,20 @@ async function alCambiarSesion(usuario) {
 }
 
 // ---------- Arranque ----------
+async function revalidarSesionGuardada(sesionActual) {
+  try {
+    return await usuarioActual();
+  } catch (err) {
+    if (err?.esRed) {
+      // API caída al revalidar: NO se cierra la sesión (no es un 401).
+      return sesionActual.usuario ?? null;
+    }
+    // 401 real: apiClient ya limpió el token y avisó al usuario.
+    carritoCtrl.alCerrarSesion();
+    return null;
+  }
+}
+
 async function iniciar() {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
@@ -233,11 +248,15 @@ async function iniciar() {
   inicializarMenu();
   inicializarFormulario();
   inicializarSesionExpirada();
+  mejorarBotonesCerrarEstaticos();
+  renderizarAvisoGlobal();
 
   // Botón de cuenta: va a la vista de login (si ya hay sesión, redirige al catálogo)
   $('#btn-usuario').addEventListener('click', () => { location.hash = '#/login'; });
 
   const avisosCarrito = carritoCtrl.inicializar();
+  // Pinta la estructura y las tarjetas (copia cacheada o esqueletos) ANTES de
+  // esperar a la API. El catálogo se revalida en segundo plano más abajo.
   catalogo.inicializar({
     onVerDetalle: carritoCtrl.abrirDetalleProducto,
     onToggleFav: carritoCtrl.toggleFavorito,
@@ -251,36 +270,29 @@ async function iniciar() {
     toast('Tu sesión había vencido. Inicia sesión de nuevo.', 'info', 6000);
   }
 
-  // Sesión guardada: revalidar contra la API (/auth/me)
+  iniciarAvisoDespertar();
   let usuario = null;
-  const sesionActual = sesionGuardada();
-  if (sesionActual) {
-    try {
-      usuario = await usuarioActual();
-    } catch (err) {
-      if (err?.esRed) {
-        // API caída al revalidar: NO se cierra la sesión (no es un 401).
-        usuario = sesionActual.usuario ?? null;
-      } else {
-        // 401 real: apiClient ya limpió el token y avisó al usuario.
-        carritoCtrl.alCerrarSesion();
-      }
+  try {
+    const sesionActual = sesionGuardada();
+    // En paralelo (no en serie): sesión, configuración pública y catálogo.
+    const [resSesion] = await Promise.allSettled([
+      sesionActual ? revalidarSesionGuardada(sesionActual) : Promise.resolve(null),
+      cargarConfiguracionPublica(),
+      catalogo.cargarCatalogo(),
+    ]);
+    usuario = resSesion.status === 'fulfilled' ? resSesion.value : null;
+
+    actualizarHeader(usuario);
+    carritoCtrl.refrescarCarrito();
+    carritoCtrl.sincronizarConCatalogo(catalogo.getProductos());
+    carritoCtrl.refrescarFavoritos();
+
+    // Con sesión vigente: liga favoritos y carrito a la cuenta (§7)
+    if (usuario) {
+      await carritoCtrl.sincronizarTrasLogin(catalogo.getProductos());
     }
-  }
-  actualizarHeader(usuario);
-
-  // Configuración pública (IVA/envío) con fallback a config.js
-  await cargarConfiguracionPublica();
-  carritoCtrl.refrescarCarrito();
-
-  // Cargar catálogo desde la API y sincronizar carrito/favoritos con stock real
-  await catalogo.cargarCatalogo();
-  carritoCtrl.sincronizarConCatalogo(catalogo.getProductos());
-  carritoCtrl.refrescarFavoritos();
-
-  // Con sesión vigente: liga favoritos y carrito a la cuenta (§7)
-  if (usuario) {
-    await carritoCtrl.sincronizarTrasLogin(catalogo.getProductos());
+  } finally {
+    detenerAvisoDespertar();
   }
 
   // Router

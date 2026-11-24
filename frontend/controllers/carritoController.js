@@ -67,13 +67,15 @@ export function agregarAlCarrito(variante, producto, cantidad = 1) {
     toast(`"${producto.nombre}"${partes ? ` (${partes})` : ''} agregado al carrito.`, 'ok', 2200);
   }
   refrescarCarrito();
+  return res;
 }
 
 // Detalle de producto: selector de material y medida + stock por variante
-export function abrirDetalleProducto(producto) {
+export function abrirDetalleProducto(producto, disparador) {
   vistaDetalle.abrirDetalleProducto(producto, {
     onAgregar: agregarAlCarrito,
     onToggleFav: toggleFavorito,
+    disparador,
   });
 }
 

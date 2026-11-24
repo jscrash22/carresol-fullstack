@@ -74,10 +74,14 @@ img { max-width: 100%; }
 
 /* ===== Hero ===== */
 .hero {
-  text-align: center; padding: 6rem 1rem; color: var(--blanco);
-  background: linear-gradient(rgba(13, 13, 13, 0.55), rgba(13, 13, 13, 0.55)),
-    url('../img/fondo/hero.jpg') center/cover no-repeat;
+  position: relative; overflow: hidden; text-align: center; padding: 6rem 1rem;
+  color: var(--blanco); background: var(--negro-2);
 }
+.hero__imagen {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  opacity: 0.45; pointer-events: none;
+}
+.hero__contenido { position: relative; z-index: 1; }
 .hero h1 { color: var(--blanco); }
 .hero p { margin: 1rem 0 2rem; color: var(--dorado-claro); }
 
@@ -136,8 +140,44 @@ img { max-width: 100%; }
 @keyframes girar { to { transform: rotate(360deg); } }
 .estado-error { text-align: center; padding: 2rem; color: #b00020; display: grid; gap: 1rem; justify-items: center; }
 
+/* ===== Esqueletos y avisos persistentes (FASE 16 UX) ===== */
+.skeleton--card {
+  min-height: 360px; border: 1px solid var(--gris-borde); border-radius: var(--radio);
+  background: var(--blanco); box-shadow: var(--sombra); padding: 1rem;
+  display: grid; align-content: start; gap: 0.9rem;
+}
+.skeleton__bloque {
+  border-radius: 8px; background: linear-gradient(90deg, #f0ece4 25%, #faf8f4 50%, #f0ece4 75%);
+  background-size: 200% 100%; animation: skeleton-brillo 1.4s ease-in-out infinite;
+}
+.skeleton__imagen { height: 200px; }
+.skeleton__linea { height: 1rem; }
+@keyframes skeleton-brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__bloque { animation: none; background: #f0ece4; }
+}
+
+.avisos-globales { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+.avisos-globales:empty { padding: 0; }
+.aviso {
+  display: flex; align-items: flex-start; gap: 0.6rem; margin: 1rem 0 0;
+  padding: 0.75rem 0.9rem; border-radius: 8px; border-left: 4px solid var(--dorado);
+  background: #fbf6ea; color: var(--negro-2); font-size: 0.92rem; line-height: 1.45;
+}
+.aviso--exito { border-left-color: #1e7e34; background: #eef8f0; color: #145a26; }
+.aviso--error { border-left-color: #b00020; background: #fdeef0; color: #8a0018; }
+.aviso__icono { flex: none; }
+.aviso__texto { flex: 1; }
+.catalogo-actualizando {
+  margin: -0.75rem 0 1rem; font-size: 0.82rem; color: var(--dorado-oscuro); font-style: italic;
+}
+.catalogo-actualizando[hidden], .avisos-globales[hidden] { display: none; }
+
 /* ===== Toasts ===== */
-.toasts { position: fixed; bottom: 5rem; left: 1.5rem; z-index: 120; display: grid; gap: 0.5rem; max-width: min(420px, 90vw); }
+.toasts {
+  position: fixed; top: 4.75rem; left: 50%; transform: translateX(-50);
+  z-index: 120; display: grid; gap: 0.5rem; width: max-content; max-width: min(420px, 92vw);
+}
 .toast {
   background: var(--negro-2); color: var(--blanco); padding: 0.75rem 1rem; border-radius: var(--radio);
   box-shadow: var(--sombra); font-size: 0.9rem; border-left: 4px solid var(--dorado);
@@ -166,7 +206,15 @@ img { max-width: 100%; }
 .panel-carrito.abierto { transform: translateX(0); }
 .panel-carrito__contenido { padding: 1.5rem; height: 100%; overflow-y: auto; }
 .panel-carrito__header { display: flex; justify-content: space-between; align-items: center; }
-.btn-cerrar { background: none; border: none; font-size: 1.25rem; cursor: pointer; }
+.btn-cerrar {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--blanco); color: var(--negro-2); border: 1px solid var(--dorado);
+  border-radius: 50%; cursor: pointer; min-width: 44px; min-height: 44px; padding: 0;
+  transition: var(--transicion);
+}
+.btn-cerrar:hover { background: var(--dorado-claro); color: var(--negro-2); }
+.btn-cerrar--compacto { min-width: 32px; min-height: 32px; width: 32px; height: 32px; border-color: currentColor; background: transparent; }
+.btn-cerrar--compacto svg { width: 16px; height: 16px; }
 .item-carrito { display: flex; gap: 0.75rem; border-bottom: 1px solid var(--gris-borde); padding: 0.75rem 0; }
 .item-carrito img { width: 60px; height: 60px; object-fit: cover; border-radius: var(--radio); }
 .item-carrito .info { flex: 1; }
@@ -192,7 +240,12 @@ img { max-width: 100%; }
   background: var(--blanco); padding: 2rem; border-radius: var(--radio);
   width: 90%; max-width: 440px; box-shadow: var(--sombra); position: relative; max-height: 90vh; overflow-y: auto;
 }
-.panel-login__contenido .btn-cerrar { position: absolute; top: 1rem; right: 1rem; }
+.modal__barra-cierre {
+  position: sticky; top: -2rem; z-index: 5; display: flex; justify-content: flex-end;
+  margin: -1.5rem -2rem 0.5rem; padding: 0.5rem 1.5rem;
+  background: linear-gradient(var(--blanco) 70%, rgba(255, 255, 255, 0));
+}
+.modal__pie { margin-top: 1.25rem; display: flex; justify-content: flex-end; }
 .acciones-modal { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
 
 /* ===== Tablas (pedidos y admin) ===== */
@@ -226,7 +279,8 @@ tbody tr:nth-child(even) { background: var(--blanco-roto); }
   }
   .nav.abierto { display: flex; }
   h1 { font-size: 1.8rem; }
-  .toasts { left: 0.75rem; right: 0.75rem; }
+  .toasts { top: 4.4rem; left: 0.75rem; right: 0.75rem; transform: none; width: auto; max-width: none; }
+  .avisos-globales { padding: 0 0.75rem; }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -248,6 +302,11 @@ tbody tr:nth-child(even) { background: var(--blanco-roto); }
 }
 .detalle-miniaturas img:hover, .detalle-miniaturas img:focus-visible { border-color: var(--dorado); }
 .detalle-info-variante { margin: 0.5rem 0 1rem; min-height: 1rem; }
+.campo-cantidad { display: grid; gap: 0.5rem; justify-items: start; }
+.campo-cantidad .btn-mini { min-height: 36px; }
+.campo-cantidad .btn-mini:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-volver { padding: 0.55rem 1rem; font-size: 0.9rem; border: 1px solid var(--gris-borde); background: var(--blanco); color: var(--negro-2); cursor: pointer; border-radius: 8px; }
+.btn-volver:hover { border-color: var(--dorado); color: var(--dorado-oscuro); }
 .detalle-info-variante .precio { margin: 0.25rem 0; }
 .card__categoria { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dorado-oscuro); font-weight: 600; }
 .campo-cantidad input { max-width: 110px; }

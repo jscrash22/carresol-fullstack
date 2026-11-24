@@ -12,6 +12,9 @@ export function cambiarTab(vista, tab) {
   vista.querySelector('#form-login').hidden = !esLogin;
   vista.querySelector('#form-registro').hidden = esLogin;
   mensajeEn(vista.querySelector('#login-aviso'), '');
+  mensajeEn(vista.querySelector('#registro-error'), '');
+  const exito = vista.querySelector('#registro-exito');
+  if (exito) { exito.textContent = ''; exito.hidden = true; }
   (esLogin ? vista.querySelector('#login-email') : vista.querySelector('#reg-nombre')).focus();
 }
 
@@ -54,6 +57,8 @@ export function mostrarErroresBackend(vista, detalleError) {
     nombre: ['#reg-nombre', '#error-reg-nombre'],
     email: ['#login-email', '#error-login-email', '#reg-email', '#error-reg-email'],
     password: ['#login-password', '#error-login-password', '#reg-password', '#error-reg-password'],
+    cedula: ['#reg-cedula', '#error-reg-cedula'],
+    telefono: ['#reg-telefono', '#error-reg-telefono'],
   };
   for (const [campo, mensaje] of campos) {
     const selectores = mapa[campo] || [];
@@ -66,6 +71,23 @@ export function mostrarErroresBackend(vista, detalleError) {
       }
     }
   }
+}
+
+// Errores de registro SIEMPRE dentro del formulario (409, 422 o red).
+export function mostrarErrorRegistro(vista, err) {
+  const bloque = vista.querySelector('#registro-error');
+  if (err.status === 409 || err.codigo === 'CONFLICTO') {
+    marcarCampo(vista.querySelector('#reg-email'), vista.querySelector('#error-reg-email'), false, err.message);
+    mensajeEn(bloque, err.message, 'error');
+    vista.querySelector('#reg-email').focus();
+    return;
+  }
+  if (err.detalles?.length) {
+    mostrarErroresBackend(vista, err);
+    mensajeEn(bloque, 'Revisa los campos marcados en rojo.', 'error');
+    return;
+  }
+  mensajeEn(bloque, err.message || 'No se pudo crear la cuenta. Intenta de nuevo.', 'error');
 }
 
 export function limpiarErrores(vista, prefijo) {

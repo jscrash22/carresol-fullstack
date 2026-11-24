@@ -3,7 +3,7 @@
 // estado/pago/envío, Usuarios, Proveedores, Compras, Inventario, Mensajes,
 // Parámetros y Auditoría). Solo pinta; adminController orquesta.
 // Regla anti-XSS: todo con createElement/textContent, nunca innerHTML.
-import { abrirModal, cerrarModal, spinner } from './uiComponents.js';
+import { abrirModal, cerrarModal, spinner, crearBarraCierre } from './uiComponents.js';
 import { formatearPrecio } from '../models/productoModel.js';
 import { urlImagenPrincipal, altImagenPrincipal } from '../models/carritoModel.js';
 
@@ -206,7 +206,7 @@ function montarModal(id, titulo, anchoGrande = false) {
   modal.hidden = true;
 
   const contenido = el('div', 'panel-login__contenido');
-  const btnCerrar = boton('✕', 'Cerrar ventana', () => cerrarModal(modal), 'btn-cerrar');
+  const barraCierre = crearBarraCierre(modal, 'Cerrar ventana');
   const h2 = el('h2', null, titulo);
   h2.id = `${id}-titulo`;
   const cuerpo = el('div', 'modal-cuerpo');
@@ -215,7 +215,7 @@ function montarModal(id, titulo, anchoGrande = false) {
   error.setAttribute('aria-live', 'polite');
   const acciones = el('div', 'panel-carrito__acciones');
 
-  contenido.append(btnCerrar, h2, cuerpo, error, acciones);
+  contenido.append(barraCierre, h2, cuerpo, error, acciones);
   modal.appendChild(contenido);
   document.body.appendChild(modal);
   return { modal, cuerpo, error, acciones };

@@ -1,5 +1,9 @@
-// uiComponents.js — alertas, toasts, modal accesible y spinners
-// Regla anti-XSS: todo se construye con createElement/textContent, nunca innerHTML.
+// uiComponents.js — alertas, avisos, toasts, modales accesibles, cierre
+// compartido, esqueletos y spinners.
+// Regla anti-XSS: todo se construye con createElement/textContent (o SVG
+// mediante createElementNS), nunca con innerHTML.
+
+import { sesion, CLAVES } from '../models/almacenamiento.js';
 
 // ---------- Toasts (región aria-live polite) ----------
 let contenedorToasts = null;
@@ -34,7 +38,147 @@ export function mensajeEn(el, texto, tipo = 'info') {
   el.hidden = !texto;
 }
 
-// ---------- Spinner de carga ----------
+// ---------- Avisos visibles y persistentes (registro, errores, estado) ----------
+const AVISO_DURACION_MS = 6000;
+let avisoGlobalMostrado = false;
+
+const ICONOS_AVISO = { exito: '✅', error: '⚠️', info: 'ℹ️' };
+
+export function crearAviso({ texto = '', tipo = 'info', id = null, cerrable = true, ms = 0, onCerrar = null } = {}) {
+  const caja = document.createElement('div');
+  caja.className = `aviso aviso--${tipo}`;
+  caja.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+  caja.setAttribute('aria-live', tipo === 'error' ? 'assertive' : 'polite');
+  if (id) caja.id = id;
+
+  const icono = document.createElement('span');
+  icono.className = 'aviso__icono';
+  icono.setAttribute('aria-hidden', 'true');
+  icono.textContent = ICONOS_AVISO[tipo] || ICONOS_AVISO.info;
+
+  const mensaje = document.createElement('span');
+  mensaje.className = 'aviso__texto';
+  mensaje.textContent = texto;
+
+  caja.append(icono, mensaje);
+
+  if (cerrable) {
+    caja.appendChild(crearBotonCerrar({
+      etiqueta: 'Cerrar aviso',
+      compacto: true,
+      onCerrar: () => {
+        if (onCerrar) onCerrar();
+        caja.remove();
+      },
+    }));
+  }
+  if (ms > 0) setTimeout(() => caja.remove(), ms);
+  return caja;
+}
+
+// Pinta un aviso DENTRO del formulario (no solo un toast).
+export function mostrarAviso(destino, texto, opciones = {}) {
+  if (!destino) return null;
+  destino.textContent = '';
+  if (!texto) {
+    destino.hidden = true;
+    return null;
+  }
+  const caja = crearAviso({ texto, ...opciones });
+  destino.appendChild(caja);
+  destino.hidden = false;
+  return caja;
+}
+
+export function guardarAvisoGlobal(texto, tipo = 'exito') {
+  sesion.set(CLAVES.AVISO_GLOBAL, { texto, tipo, creadoEn: Date.now() });
+  avisoGlobalMostrado = false;
+}
+
+export function limpiarAvisoGlobal() {
+  sesion.remove(CLAVES.AVISO_GLOBAL);
+  avisoGlobalMostrado = false;
+}
+
+// Banner superior que sobrevive a la navegación tras el registro.
+export function renderizarAvisoGlobal() {
+  const destino = document.getElementById('aviso-global');
+  if (!destino) return;
+  const aviso = sesion.json(CLAVES.AVISO_GLOBAL, null);
+  if (!aviso?.texto) {
+    destino.textContent = '';
+    destino.hidden = true;
+    return;
+  }
+  if (avisoGlobalMostrado && destino.childElementCount) return;
+  destino.textContent = '';
+  const caja = crearAviso({
+    texto: aviso.texto,
+    tipo: aviso.tipo || 'exito',
+    ms: 0,
+    onCerrar: limpiarAvisoGlobal,
+  });
+  destino.appendChild(caja);
+  destino.hidden = false;
+  avisoGlobalMostrado = true;
+  setTimeout(() => {
+    limpiarAvisoGlobal();
+    caja.remove();
+    if (!destino.childElementCount) destino.hidden = true;
+  }, AVISO_DURACION_MS);
+}
+
+// ---------- Botón de cierre compartido ----------
+export function crearBotonCerrar({ etiqueta = 'Cerrar', onCerrar = null, compacto = false } = {}) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `btn-cerrar ${compacto ? 'btn-cerrar--compacto' : 'btn-cerrar--modal'}`.trim();
+  btn.setAttribute('aria-label', etiqueta);
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '20');
+  svg.setAttribute('height', '20');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const d of ['M6 6l12 12', 'M18 6L6 18']) {
+    const trazo = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trazo.setAttribute('d', d);
+    svg.appendChild(trazo);
+  }
+  btn.appendChild(svg);
+  if (onCerrar) btn.addEventListener('click', onCerrar);
+  return btn;
+}
+
+// Barra superior sticky: el botón sigue visible aunque el contenido haga scroll.
+export function crearBarraCierre(modal, etiqueta = 'Cerrar', onCerrar = null) {
+  const barra = document.createElement('div');
+  barra.className = 'modal__barra-cierre';
+  barra.appendChild(crearBotonCerrar({
+    etiqueta,
+    onCerrar: onCerrar || (() => cerrarModal(modal)),
+  }));
+  return barra;
+}
+
+// Mejora los botones ✕ declarados en index.html sin perder sus ids ni listeners.
+export function mejorarBotonesCerrarEstaticos(raiz = document) {
+  raiz.querySelectorAll('.btn-cerrar').forEach((btn) => {
+    if (btn.querySelector('svg')) return;
+    const etiqueta = btn.getAttribute('aria-label') || 'Cerrar';
+    const reemplazo = crearBotonCerrar({ etiqueta });
+    reemplazo.id = btn.id;
+    reemplazo.className = `${btn.className} btn-cerrar--modal`.trim();
+    btn.replaceWith(reemplazo);
+  });
+}
+
+// ---------- Spinner y esqueletos ----------
 export function spinner(texto = 'Cargando…') {
   const d = document.createElement('div');
   d.className = 'cargando';
@@ -49,7 +193,27 @@ export function spinner(texto = 'Cargando…') {
   return d;
 }
 
-// ---------- Modal accesible (foco atrapado, Esc, retorno de foco) ----------
+export function esqueletos(cantidad = 8) {
+  const fragmento = document.createDocumentFragment();
+  for (let i = 0; i < cantidad; i += 1) {
+    const tarjeta = document.createElement('div');
+    tarjeta.className = 'skeleton skeleton--card';
+    tarjeta.setAttribute('aria-hidden', 'true');
+    const imagen = document.createElement('div');
+    imagen.className = 'skeleton__bloque skeleton__imagen';
+    const titulo = document.createElement('div');
+    titulo.className = 'skeleton__bloque skeleton__linea';
+    titulo.style.width = '72%';
+    const linea = document.createElement('div');
+    linea.className = 'skeleton__bloque skeleton__linea';
+    linea.style.width = '48%';
+    tarjeta.append(imagen, titulo, linea);
+    fragmento.appendChild(tarjeta);
+  }
+  return fragmento;
+}
+
+// ---------- Modal accesible (foco atrapado, Esc, fondo, retorno de foco) ----------
 export function abrirModal(modal, disparador) {
   const ultimoFoco = disparador || document.activeElement;
   // Referencia directa al elemento que abrió el modal (para devolverle el foco)
@@ -79,8 +243,12 @@ export function abrirModal(modal, disparador) {
   function alEscape(e) {
     if (e.key === 'Escape') cerrarModal(modal);
   }
-  modal._manejadores = { alTabular, alEscape };
+  function alFondo(e) {
+    if (e.target === modal) cerrarModal(modal);
+  }
+  modal._manejadores = { alTabular, alEscape, alFondo };
   modal.addEventListener('keydown', alTabular);
+  modal.addEventListener('click', alFondo);
   document.addEventListener('keydown', alEscape, true);
 }
 
@@ -89,6 +257,7 @@ export function cerrarModal(modal) {
   setTimeout(() => { modal.hidden = true; }, 250);
   if (modal._manejadores) {
     modal.removeEventListener('keydown', modal._manejadores.alTabular);
+    modal.removeEventListener('click', modal._manejadores.alFondo);
     document.removeEventListener('keydown', modal._manejadores.alEscape, true);
     delete modal._manejadores;
   }
@@ -134,7 +303,8 @@ export function confirmar({ titulo, mensaje, textoOk = 'Confirmar', textoCancela
     const ok = modal.querySelector('#confirmacion-ok');
     ok.textContent = textoOk;
     ok.className = peligro ? 'btn btn-rojo' : 'btn btn-dorado';
-    modal.querySelector('#confirmacion-cancelar').textContent = textoCancelar;
+    const cancelar = modal.querySelector('#confirmacion-cancelar');
+    cancelar.textContent = textoCancelar;
 
     const cerrar = (respuesta) => {
       cerrarModal(modal);
@@ -144,8 +314,12 @@ export function confirmar({ titulo, mensaje, textoOk = 'Confirmar', textoCancela
     };
     const alOk = () => cerrar(true);
     const alNo = () => cerrar(false);
+
+    const contenido = modal.querySelector('.panel-login__contenido');
+    if (!contenido.querySelector('.modal__barra-cierre')) {
+      contenido.prepend(crearBarraCierre(modal, 'Cerrar confirmación', () => cerrar(false)));
+    }
     ok.addEventListener('click', alOk);
-    const cancelar = modal.querySelector('#confirmacion-cancelar');
     cancelar.addEventListener('click', alNo);
     abrirModal(modal, document.activeElement);
   });
