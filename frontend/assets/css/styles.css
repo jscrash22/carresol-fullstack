@@ -177,6 +177,7 @@ img { max-width: 100%; }
 .toasts {
   position: fixed; top: 4.75rem; left: 50%; transform: translateX(-50);
   z-index: 120; display: grid; gap: 0.5rem; width: max-content; max-width: min(420px, 92vw);
+  pointer-events: none; /* los avisos no son interactivos: nunca tapan clics */
 }
 .toast {
   background: var(--negro-2); color: var(--blanco); padding: 0.75rem 1rem; border-radius: var(--radio);
@@ -241,10 +242,12 @@ img { max-width: 100%; }
   width: 90%; max-width: 440px; box-shadow: var(--sombra); position: relative; max-height: 90vh; overflow-y: auto;
 }
 .modal__barra-cierre {
-  position: sticky; top: -2rem; z-index: 5; display: flex; justify-content: flex-end;
-  margin: -1.5rem -2rem 0.5rem; padding: 0.5rem 1.5rem;
-  background: linear-gradient(var(--blanco) 70%, rgba(255, 255, 255, 0));
+  position: sticky; top: 0; z-index: 5; display: flex; justify-content: flex-end;
+  pointer-events: none; /* la franja no bloquea controles; solo el botón es clicable */
+  margin: -0.25rem 0 0.5rem; padding: 0.25rem 0;
+  background: var(--blanco);
 }
+.modal__barra-cierre .btn-cerrar { pointer-events: auto; }
 .modal__pie { margin-top: 1.25rem; display: flex; justify-content: flex-end; }
 .acciones-modal { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
 
