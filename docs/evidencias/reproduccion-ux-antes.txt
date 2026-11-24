@@ -1,0 +1,27 @@
+=== REPRODUCCIÓN UX — ANTES — 2026-11-24T12:50:37.089Z ===
+Frontend: http://localhost:5500 · API simulada con Playwright (sin escrituras en Supabase).
+FALLA ✗ 1. Registro: aviso visible en el formulario — no existe el bloque en el formulario
+FALLA ✗ 1. Registro: aviso conservado tras navegar — no existe banner global
+PASS ✓ 1. Registro: navegación automática — hash=#/catalogo; toast=Cuenta creada. ¡Bienvenido/a, Usuario Ux!
+FALLA ✗ 1. Registro duplicado: error dentro del formulario — form=—; email=—; aviso=Ya existe una cuenta con ese correo electrónico.
+FALLA ✗ 2. Modal: botón SVG accesible ≥44×44 — svg=false; 16.34375×27; aria=Cerrar detalle de producto
+FALLA ✗ 2. Modal: cierre visible con scroll — top=-144px
+FALLA ✗ 2. Modal: clic en el fondo cierra — no cerró
+PASS ✓ 2. Modal: Esc cierra y devuelve el foco — foco=Ver detalle de Anillo Prueba UX
+FALLA ✗ 2. Modal: botón "Volver al catálogo" — ausente
+FALLA ✗ 4. Cantidad: input.max es el stock — max=10 (stock=12)
+FALLA ✗ 4. Cantidad: modal NO se cierra si se rechaza — se cerró igual
+FALLA ✗ 4. Cantidad: error en línea — solo toast: —
+PASS ✓ Rendimiento API caliente: primera vista útil — 559 ms
+FALLA ✗ Rendimiento API caliente: esqueletos — no aparecen (spinner)
+PASS ✓ Rendimiento API caliente: catálogo — 1827 ms
+PASS ✓ Rendimiento API fría (5 s): primera vista útil — 522 ms
+FALLA ✗ Rendimiento API fría (5 s): esqueletos — no aparecen (spinner)
+PASS ✓ Rendimiento API fría (5 s): catálogo — 10539 ms
+PASS ✓ Rendimiento Red lenta (1,5 s): primera vista útil — 521 ms
+FALLA ✗ Rendimiento Red lenta (1,5 s): esqueletos — no aparecen (spinner)
+PASS ✓ Rendimiento Red lenta (1,5 s): catálogo — 3527 ms
+FALLA ✗ 3. Segunda visita con red lenta: catálogo inmediato desde caché — 1.ª=3569 ms; 2.ª=3075; sin caché
+
+RESUMEN ANTES: 8 PASS / 14 FALLAS (comportamiento antiguo confirmado).
+Mediciones: caliente=1827 ms · fría=10539 ms · lenta=3527 ms.

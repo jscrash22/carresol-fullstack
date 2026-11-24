@@ -1,0 +1,10 @@
+=== RENDIMIENTO — ANTES — 2026-11-24T12:51:11.458Z ===
+Medido con Playwright (Edge headless), frontend local y API simulada. Sin escrituras en Supabase.
+
+API caliente: primera vista útil=559 ms; catálogo=1827 ms.
+API fría (retardo 5 s): primera vista útil=522 ms; catálogo=10539 ms.
+Red lenta (retardo 1,5 s): primera vista útil=521 ms; catálogo=3527 ms.
+Esqueletos: ausentes / ausentes / ausentes ms.
+Segunda visita con red lenta: sin copia cacheada; vuelve a esperar a la API.
+
+Los números DESPUÉS se añadirán al final de este archivo tras las correcciones.

@@ -1,0 +1,7 @@
+=== TOPES BACKEND — ANTES — 2026-11-24T12:52:15.506Z ===
+PASS ✓ Pedido de 11 unidades pasa la validación (tope backend 50) — HTTP 200; sin mensaje
+PASS ✓ Pedido de 2000 unidades — HTTP 422; Datos inválidos: revisa los campos enviados.
+PASS ✓ Carrito sync con 2000 unidades — HTTP 422; Datos inválidos: revisa los campos enviados.
+PASS ✓ Item de carrito con 2000 unidades — HTTP 422; Datos inválidos: revisa los campos enviados.
+PASS ✓ Compra con 600 unidades — HTTP 422; Datos inválidos: revisa los campos enviados.
+Nota: se valida SOLO express-validator, sin base de datos ni credenciales.
