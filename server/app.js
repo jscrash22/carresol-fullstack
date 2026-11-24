@@ -17,6 +17,10 @@ import proveedoresRouter from './routes/proveedores.js';
 import inventarioRouter from './routes/inventario.js';
 import adminRouter from './routes/admin.js';
 import configPublicaRouter from './routes/configPublica.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
@@ -77,6 +81,9 @@ app.use('/api/compras', comprasRouter);
 app.use('/api/proveedores', proveedoresRouter);
 app.use('/api/inventario', inventarioRouter);
 app.use('/api/admin', adminRouter);
+
+// Archivos de verificación de dominio para DAST (AppScan on Cloud)
+app.use(express.static(path.join(__dirname, 'public'), { index: false, dotfiles: 'ignore' }));
 
 // 404 consistente + manejo de errores centralizado
 app.use(noEncontrado);
